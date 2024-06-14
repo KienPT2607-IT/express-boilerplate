@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 
-const userController = require("../controllers/user_controllers");
+const customerController = require("../controllers/customer_controller");
 const { isCustomer } = require("../middlewares/auth");
 
-router.get("/", userController.getAllUsers);
+router.get("/", customerController.getAllUsers);
 
-router.post("/register", userController.register);
+router.post("/register", customerController.register);
 
 // router.post("/login", () => { })
 
