@@ -1,4 +1,4 @@
-exports.responseHandler = (httpCode, isSuccess, message, data, error) => {
+const responseHandler = (httpCode, isSuccess, message, data, error) => {
    switch (httpCode) {
       case 200:
          return res.status(httpCode).json({
@@ -27,3 +27,5 @@ exports.responseHandler = (httpCode, isSuccess, message, data, error) => {
          })
    }
 }
+
+module.exports = {responseHandler}
