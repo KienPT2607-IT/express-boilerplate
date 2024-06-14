@@ -1,6 +1,6 @@
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const connection = require("../utils/db");
+const connection = require("../services/db");
 
 const isCustomer = async (req, res, next) => {
 	try {

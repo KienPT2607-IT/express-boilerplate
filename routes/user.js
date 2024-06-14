@@ -4,9 +4,9 @@ const router = express.Router();
 const userController = require("../controllers/user_controllers");
 const { isCustomer } = require("../middlewares/auth");
 
-router.get("/", userController.getAllUsers());
+router.get("/", userController.getAllUsers);
 
-router.post("/register", async () => {});
+router.post("/register", userController.register);
 
 // router.post("/login", () => { })
 
