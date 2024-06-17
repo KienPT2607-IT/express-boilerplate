@@ -4,7 +4,6 @@ const jwt = require("jsonwebtoken");
 
 const connection = require("../services/db");
 const { validateRegisterInputs, validateLoginInputs } = require("../services/account_services");
-const { responseHandler } = require("../services/http_response");
 
 const { formatDateToYYYYMMDD } = require("../utils/date_utils");
 
@@ -34,7 +33,7 @@ exports.register = async (req, res) => {
 	try {
 		const { email, password, confirmPassword, gender, dob, phoneNumber } = req.body;
 
-		const validationResult = validateInputs(email, password, confirmPassword, gender, dob, phoneNumber)
+		const validationResult = validateRegisterInputs(email, password, confirmPassword, gender, dob, phoneNumber)
 		if (!validationResult.success)
 			return res.status(400).json(validationResult);
 
