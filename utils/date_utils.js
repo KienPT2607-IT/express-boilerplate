@@ -1,13 +1,4 @@
-function checkDateValid(dateString) {
-   // Allow ISO 8601 format
-   const date = new Date(dateString);
 
-   // Check if the date is valid
-   if (isNaN(date.getTime())) {
-      return false;
-   }
-   return true;
-}
 
 function formatDateToYYYYMMDD(dateString) {
    const date = new Date(dateString);
@@ -17,4 +8,4 @@ function formatDateToYYYYMMDD(dateString) {
    return `${year}-${month}-${day}`;
 }
 
-module.exports = {checkDateValid, formatDateToYYYYMMDD}
+module.exports = { formatDateToYYYYMMDD }
