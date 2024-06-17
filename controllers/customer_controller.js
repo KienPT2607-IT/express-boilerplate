@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const connection = require("../services/db");
-const { validateInputs } = require("../services/account_services");
+const { validateRegisterInputs, validateLoginInputs } = require("../services/account_services");
 const { responseHandler } = require("../services/http_response");
 
 const { formatDateToYYYYMMDD } = require("../utils/date_utils");
@@ -51,12 +51,12 @@ exports.register = async (req, res) => {
 			message: "Account registered",
 		});
 	} catch (error) {
-		if (error.code === "ER_DUP_ENTRY") 
+		if (error.code === "ER_DUP_ENTRY")
 			return res.status(400).json({
 				success: false,
 				message: "Some fields duplicated",
 			})
-		
+
 		return res.status(500).json({
 			success: false,
 			message: "Database query error",
@@ -68,16 +68,18 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
-		if (!checkEmailValid(email))
-			return res.status(400).json({
-				success: false,
-				message: "Invalid email",
-			});
+		const validationResult = validateLoginInputs(email, password)
+		if (!validationResult.success)
+			return res.status(400).json(validationResult);
 		const [result] = await connection.query(
 			"SELECT * FROM customers WHERE email = ? LIMIT 1",
 			[email]
 		);
-
+		if (result.length == 0)
+			return res.status(404).json({
+				success: false,
+				message: "This account does not exist"
+			})
 		const isPassMatched = await bcrypt.compare(password, result[0].password);
 		if (!isPassMatched)
 			return res.status(400).json({

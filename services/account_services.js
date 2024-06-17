@@ -9,31 +9,51 @@ const GENDERS = ["male", "female", "other"]
  * @param {string} dob 
  * @returns 
  */
-function validateInputs(email, password, confirmPassword, gender, dob) {
+function validateRegisterInputs(email, password, confirmPassword, gender, dob) {
 	if (!checkPasswordsValid(password))
 		return {
 			success: false,
 			message: "Password is invalid or contains spaces",
 		};
-	if (!checkPasswordConfirmValid(password, confirmPassword)) 
+	if (!checkPasswordConfirmValid(password, confirmPassword))
 		return {
 			success: false,
 			message: "Password and confirmation not matched",
 		};
-	if (!checkEmailValid(email)) 
+	if (!checkEmailValid(email))
 		return {
 			success: false,
 			message: "Invalid email",
 		};
-	if (!checkGenderValid(gender.toLowerCase())) 
+	if (!checkGenderValid(gender.toLowerCase()))
 		return {
 			success: false,
 			message: "Invalid gender",
 		};
-	if (!checkDateValid(dob)) 
+	if (!checkDateValid(dob))
 		return {
 			success: false,
 			message: "Invalid dob",
+		};
+	return { success: true };
+}
+
+/**
+ * 
+ * @param {string} email 
+ * @param {string} password 
+ * @returns 
+ */
+function validateLoginInputs(email, password) {
+	if (!checkEmailValid(email))
+		return {
+			success: false,
+			message: "Invalid email",
+		};
+	if (!password.trim())
+		return {
+			success: false,
+			message: "Empty password",
 		};
 	return { success: true };
 }
@@ -80,5 +100,6 @@ function checkDateValid(dateString) {
 }
 
 module.exports = {
-	validateInputs
+	validateRegisterInputs,
+	validateLoginInputs
 }
