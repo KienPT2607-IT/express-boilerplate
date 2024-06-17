@@ -71,7 +71,7 @@ exports.login = async (req, res) => {
 		if (!validationResult.success)
 			return res.status(400).json(validationResult);
 		const [result] = await connection.query(
-			"SELECT * FROM customers WHERE email = ? LIMIT 1",
+			"SELECT id, email, password FROM customers WHERE email = ? LIMIT 1",
 			[email]
 		);
 		if (result.length == 0)
@@ -91,10 +91,7 @@ exports.login = async (req, res) => {
 			message: "Logged in successfully",
 			data: {
 				token: token,
-				email: result[0].email,
-				gender: result[0].gender,
-				dob: result[0].dob,
-				phone_number: result[0].phone_number,
+				name: (result[0].email.split("@"))[0],
 			},
 		});
 	} catch (error) {
