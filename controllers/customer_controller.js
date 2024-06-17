@@ -35,16 +35,15 @@ exports.register = async (req, res) => {
 		const { email, password, confirmPassword, gender, dob, phoneNumber } = req.body;
 
 		const validationResult = validateInputs(email, password, confirmPassword, gender, dob, phoneNumber)
-		// Check validation for password
-		if (!validationResult.success) 
+		if (!validationResult.success)
 			return res.status(400).json(validationResult);
-		
+
 		// Convert DOB to YYYY-MM-DD format
 		const formattedDob = formatDateToYYYYMMDD(dob);
 		const passHashed = await bcrypt.hash(password, SALT_ROUNDS);
 		const [results] = await connection.query(
 			"INSERT INTO customers (email, password, phone_number, dob, gender) values (?, ?, ?, ?, ?)",
-			[email, passHashed, phoneNumber, formattedDob, gender]
+			[email, passHashed, phoneNumber, formattedDob, gender.toLowerCase()]
 		);
 		console.log(results);
 		return res.status(201).json({
@@ -52,7 +51,12 @@ exports.register = async (req, res) => {
 			message: "Account registered",
 		});
 	} catch (error) {
-		console.log(error);
+		if (error.code === "ER_DUP_ENTRY") 
+			return res.status(400).json({
+				success: false,
+				message: "Some fields duplicated",
+			})
+		
 		return res.status(500).json({
 			success: false,
 			message: "Database query error",
