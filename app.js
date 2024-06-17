@@ -7,6 +7,7 @@ var logger = require('morgan');
 var app = express();
 
 const customerRouter = require("./routes/customers")
+const staffRouter = require("./routes/staffs")
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -15,5 +16,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use("/customers", customerRouter)
+app.use("/staffs", staffRouter)
 
 module.exports = app;
