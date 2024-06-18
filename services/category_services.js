@@ -22,12 +22,11 @@ function validateInput(name, description) {
  * @param {string} name 
  */
 function checkNameValid(name) {
-   console.log(name);
    if (!name)
       return false
    if (typeof name !== "string")
       return false
-   if (name.length < 5 || name.length > 100)
+   if (name.length < 2 || name.length > 100)
       return false
    return true
 }

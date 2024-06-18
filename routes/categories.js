@@ -156,4 +156,5 @@ router.get("/", isStaff("staff"), categoryController.getAllCategories)
  */
 router.post("/add", isStaff("staff"), categoryController.addCategory)
 
+router.put("/update/:categoryId", isStaff("staff"), categoryController.updateCategory)
 module.exports = router
