@@ -14,6 +14,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const customerRouter = require("./routes/customers")
 const staffRouter = require("./routes/staffs")
+const categoryRouter = require("./routes/categories")
 
 app.use(cors())
 app.use(logger('dev'));
@@ -24,5 +25,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use("/customers", customerRouter)
 app.use("/staffs", staffRouter)
+app.use("/categories", categoryRouter)
 
 module.exports = app;
