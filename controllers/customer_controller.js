@@ -89,7 +89,7 @@ exports.login = async (req, res) => {
 			success: true,
 			message: "Logged in successfully",
 			data: {
-				token: token,
+				auth_token: token,
 				name: (result[0].email.split("@"))[0],
 			},
 		});
