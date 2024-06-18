@@ -83,9 +83,12 @@ router.get("/", customerController.getAllUsers);
  *           schema:
  *             type: object
  *             required:
- *               - name
  *               - email
  *               - password
+ *               - confirm_password
+ *               - phone_number
+ *               - gender
+ *               - dob
  *             properties:
  *               email:
  *                 type: string
