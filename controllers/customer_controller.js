@@ -10,11 +10,9 @@ const { formatDateToYYYYMMDD } = require("../utils/date_utils");
 const SALT_ROUNDS = 8;
 
 exports.getAllUsers = async (req, res) => {
-	const { email, password } = req.body;
 	try {
-		const [rows, fields] = await connection.query("SELECT * FROM customers");
+		const [rows, fields] = await connection.query("SELECT id, email, gender, dob, phone_number, is_active, create_at, modify_at FROM customers");
 		console.log(rows);
-		console.log(fields);
 		res.status(200).json({
 			success: true,
 			data: rows,
@@ -31,9 +29,9 @@ exports.getAllUsers = async (req, res) => {
 
 exports.register = async (req, res) => {
 	try {
-		const { email, password, confirmPassword, gender, dob, phoneNumber } = req.body;
+		const { email, password, confirm_password, gender, dob, phone_number } = req.body;
 
-		const validationResult = validateRegisterInputs(email, password, confirmPassword, gender, dob, phoneNumber)
+		const validationResult = validateRegisterInputs(email, password, confirm_password, gender, dob, phone_number)
 		if (!validationResult.success)
 			return res.status(400).json(validationResult);
 
@@ -42,7 +40,7 @@ exports.register = async (req, res) => {
 		const passHashed = await bcrypt.hash(password, SALT_ROUNDS);
 		const [results] = await connection.query(
 			"INSERT INTO customers (email, password, phone_number, dob, gender) values (?, ?, ?, ?, ?)",
-			[email, passHashed, phoneNumber, formattedDob, gender.toLowerCase()]
+			[email, passHashed, phone_number, formattedDob, gender.toLowerCase()]
 		);
 		console.log(results);
 		return res.status(201).json({
@@ -54,6 +52,7 @@ exports.register = async (req, res) => {
 			return res.status(400).json({
 				success: false,
 				message: "Some fields duplicated",
+				error: error.message,
 			})
 
 		return res.status(500).json({

@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 
 const connection = require("../services/db");
 const { validateLoginInputs } = require("../services/account_services");
+
 exports.login = async (req, res) => {
    try {
       const { email, password } = req.body;
