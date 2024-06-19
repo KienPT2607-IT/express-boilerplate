@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const customerController = require("../controllers/customer_controller");
-const { isCustomer } = require("../middlewares/auth");
+const { isCustomer, authenticateToken } = require("../middlewares/auth");
 
 /**
  * @swagger
@@ -239,4 +239,5 @@ router.post("/register", customerController.register);
  */
 router.post("/login", customerController.login)
 
+router.get("/logout", authenticateToken, customerController.logout)
 module.exports = router;

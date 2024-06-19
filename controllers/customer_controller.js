@@ -1,13 +1,15 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
-const connection = require("../services/db");
+const redisClient = require("../services/RedisClient")
 const { validateRegisterInputs, validateLoginInputs } = require("../services/account_services");
 
 const { formatDateToYYYYMMDD } = require("../utils/date_utils");
 
+const connection = require("../services/db");
 const SALT_ROUNDS = 8;
+
+
 
 exports.getAllUsers = async (req, res) => {
 	try {
@@ -87,7 +89,7 @@ exports.login = async (req, res) => {
 		const token = jwt.sign(
 			{ id: result[0].id },
 			process.env.JWT_TOKEN_SECRET_KEY,
-			{ expiresIn: "7d" }
+			{ expiresIn: "1d" }
 		);
 		return res.status(200).json({
 			success: true,
@@ -105,3 +107,26 @@ exports.login = async (req, res) => {
 		});
 	}
 };
+
+exports.logout = async (req, res) => {
+	try {
+		if (!redisClient.isReady) 
+			await redisClient.connect();
+
+		const token = req.auth_token
+		const tokenDecoded = jwt.decode(token)
+		const ttl = tokenDecoded.exp - Math.floor(Date.now() / 1000)
+
+		await redisClient.set(token, 'blacklisted', { EX: ttl });
+		res.status(200).json({
+			success: true,
+			message: "Logged out successfully!"
+		})
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({
+			success: false,
+			message: "Server error!"
+		})
+	}
+}

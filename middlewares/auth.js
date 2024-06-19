@@ -1,7 +1,50 @@
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
+const redisClient = require("../services/RedisClient")
 
-const tokenSecretKey = process.env.JWT_TOKEN_SECRET_KEY
+const TOKEN_SECRET_KEY = process.env.JWT_TOKEN_SECRET_KEY
+
+async function isTokenInvalidated (token) {
+	if (!redisClient.isReady)
+		await redisClient.connect();
+	const result = redisClient.get(token)
+	if (result) 
+		return true
+	return false
+}
+
+const authenticateToken = async (req, res, next) => {
+	const auth_token = req.header("auth_token")
+	if (!auth_token)
+		return res.status(403).json({
+			success: false,
+			message: "No auth token, authorization denied!",
+		});
+	try {
+		jwt.verify(auth_token, TOKEN_SECRET_KEY)
+		req.auth_token = auth_token
+		if (isTokenInvalidated(auth_token)) {
+			return res.status(400).json({
+				success: false,
+				message: "Token invalidated, authorization denied!",
+			})
+		}
+
+		next()
+	} catch (error) {
+		if (error.name === 'TokenExpiredError') {
+			return res.status(401).json({
+				success: false,
+				message: "Token has expired, authorization denied!",
+			});
+		} else {
+			return res.status(401).json({
+				success: false,
+				message: "Token authorization failed, authorization denied!",
+			});
+		}
+	}
+}
 
 const isCustomer = async (req, res, next) => {
 	try {
@@ -42,7 +85,7 @@ const isStaff = (allowRole) => (req, res, next) => {
 			success: false,
 			message: "No auth token, authorization denied!",
 		});
-	const isVerified = jwt.verify(token, tokenSecretKey);
+	const isVerified = jwt.verify(token, TOKEN_SECRET_KEY);
 	if (!isVerified)
 		return res.status(401).json({
 			success: false,
@@ -59,4 +102,4 @@ const isStaff = (allowRole) => (req, res, next) => {
 }
 
 
-module.exports = { isCustomer, isStaff };
+module.exports = { isCustomer, isStaff, authenticateToken };
