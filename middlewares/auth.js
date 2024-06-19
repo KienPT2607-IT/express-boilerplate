@@ -1,6 +1,6 @@
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const redisClient = require("../services/RedisClient")
+const redisClient = require("../services/RedisClientServices")
 
 const TOKEN_SECRET_KEY = process.env.JWT_TOKEN_SECRET_KEY
 

@@ -1,7 +1,7 @@
 require("dotenv").config();
 
-const connection = require("../services/db");
-const { validateInput } = require("../services/category_services");
+const connection = require("../services/DBServices");
+const { validateInput } = require("../services/CategoryServices");
 
 exports.addCategory = async (req, res) => {
    try {

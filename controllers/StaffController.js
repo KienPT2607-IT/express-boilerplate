@@ -2,8 +2,8 @@ require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const connection = require("../services/db");
-const { validateLoginInputs } = require("../services/account_services");
+const connection = require("../services/DBServices");
+const { validateLoginInputs } = require("../services/AccountServices");
 
 exports.login = async (req, res) => {
    try {

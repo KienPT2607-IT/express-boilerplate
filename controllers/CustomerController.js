@@ -1,13 +1,16 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const redisClient = require("../services/RedisClient")
-const { validateRegisterInputs, validateLoginInputs } = require("../services/account_services");
+const redisClient = require("../services/RedisClientServices")
+const {
+	validateRegisterInputs,
+	validateLoginInputs,
+	registerNewAccount,
+	isEmailExisted,
+	isPhoneNumberExisted
+} = require("../services/AccountServices");
 
-const { formatDateToYYYYMMDD } = require("../utils/date_utils");
-
-const connection = require("../services/db");
-const SALT_ROUNDS = 8;
+const connection = require("../services/DBServices");
 
 
 
@@ -32,34 +35,42 @@ exports.getAllUsers = async (req, res) => {
 exports.register = async (req, res) => {
 	try {
 		const { email, password, confirm_password, gender, dob, phone_number } = req.body;
-
-		const validationResult = validateRegisterInputs(email, password, confirm_password, gender, dob, phone_number)
-		if (!validationResult.success)
-			return res.status(400).json(validationResult);
-
-		// Convert DOB to YYYY-MM-DD format
-		const formattedDob = formatDateToYYYYMMDD(dob);
-		const passHashed = await bcrypt.hash(password, SALT_ROUNDS);
-		const [results] = await connection.query(
-			"INSERT INTO customers (email, password, phone_number, dob, gender) values (?, ?, ?, ?, ?)",
-			[email, passHashed, phone_number, formattedDob, gender.toLowerCase()]
-		);
-		console.log(results);
-		return res.status(201).json({
-			success: true,
-			message: "Account registered",
-		});
-	} catch (error) {
-		if (error.code === "ER_DUP_ENTRY")
+		if (!validateRegisterInputs(
+			email,
+			password,
+			confirm_password,
+			gender,
+			dob,
+			phone_number
+		))
 			return res.status(400).json({
 				success: false,
-				message: "Some fields duplicated",
-				error: error.message,
-			})
-
+				message: "Invalid account information!"
+			});
+		if (await isEmailExisted(email))
+			return res.status(400).json({
+				success: false,
+				message: "Duplicated email!",
+			});
+		if (await isPhoneNumberExisted(phone_number))
+			return res.status(400).json({
+				success: false,
+				message: "Duplicated phone number!",
+			});
+		const result = await registerNewAccount(email, password, phone_number, dob, gender)
+		if (!result)
+			return res.status(400).json({
+				success: false,
+				message: "Cannot register new account!",
+			});
+		return res.status(201).json({
+			success: true,
+			message: "Account registered!",
+		});
+	} catch (error) {
 		return res.status(500).json({
 			success: false,
-			message: "Database query error",
+			message: "Server error!",
 			error: error.message,
 		});
 	}
@@ -110,7 +121,7 @@ exports.login = async (req, res) => {
 
 exports.logout = async (req, res) => {
 	try {
-		if (!redisClient.isReady) 
+		if (!redisClient.isReady)
 			await redisClient.connect();
 
 		const token = req.auth_token
