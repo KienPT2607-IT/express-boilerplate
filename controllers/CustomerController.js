@@ -1,5 +1,4 @@
 require("dotenv").config();
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const redisClient = require("../services/RedisClientServices")
@@ -11,7 +10,8 @@ const {
 	isPhoneNumberExisted,
 	getCustomerAccount,
 	isPasswordMatched,
-	generateCustomerAuthToken
+	generateCustomerAuthToken,
+	logoutUser
 } = require("../services/AccountServices");
 const connection = require("../services/DBServices");
 
@@ -83,10 +83,10 @@ exports.login = async (req, res) => {
 	try {
 		const { email, password } = req.body
 
-		const validationResult = validateLoginInputs(email, password)
-		if (!validationResult)
+		const accountValidationResult = validateLoginInputs(email, password)
+		if (!accountValidationResult)
 			return res.status(400).json({
-				success: validationResult,
+				success: accountValidationResult,
 				message: "Invalid account!"
 			})
 
@@ -123,20 +123,17 @@ exports.login = async (req, res) => {
 
 exports.logout = async (req, res) => {
 	try {
-		if (!redisClient.isReady) await redisClient.connect();
-
-		const token = req.auth_token
-		const tokenDecoded = jwt.decode(token)
-		const ttl = tokenDecoded.exp - Math.floor(Date.now() / 1000)
-
-		const result = await redisClient.set(token, 'blacklisted', { EX: ttl });
-		console.log(result);
-		res.status(200).json({
+		const result = await logoutUser(req.auth_token)
+		if (!result)
+			return res.status(500).json({
+				success: !result,
+				message: "Server error, cannot invalidate token!"
+			})
+		return res.status(200).json({
 			success: true,
 			message: "Logged out successfully!"
 		})
 	} catch (error) {
-		console.log(error);
 		return res.status(500).json({
 			success: false,
 			message: "Server error!"

@@ -1,6 +1,7 @@
+require('dotenv').config();
 const jwt = require("jsonwebtoken");
 const bcrypt = require('bcryptjs');
-const dotenv = require('dotenv');
+const redisClient = require("../services/RedisClientServices")
 
 const accountUtils = require("../utils/account_utils")
 const { formatDateToYYYYMMDD } = require("../utils/date_utils")
@@ -92,6 +93,19 @@ async function getCustomerAccount(email) {
 	}
 }
 
+async function getStaffAccount(email) {
+	try {
+		const [result] = await connection.query(
+			"SELECT id, role, email, password FROM staffs WHERE email = ? LIMIT 1",
+			[email]
+		);
+		if (!result) return null
+		return result[0]
+	} catch (error) {
+		return null
+	}
+}
+
 async function isPasswordMatched(password, passHashed) {
 	try {
 		const isPassMatched = await bcrypt.compare(
@@ -111,6 +125,25 @@ const generateCustomerAuthToken = (id) => jwt.sign(
 	{ expiresIn: "1d" }
 );
 
+const generateStaffAuthToken = (id, role) => jwt.sign(
+	{ id: id, role: role },
+	process.env.JWT_TOKEN_SECRET_KEY,
+	{ expiresIn: "1d" }
+);
+
+async function logoutUser(token) {
+	try {
+		if (!redisClient.isReady) await redisClient.connect();
+
+		const tokenDecoded = jwt.decode(token)
+		const ttl = tokenDecoded.exp - Math.floor(Date.now() / 1000)
+
+		await redisClient.set(token, 'blacklisted', { EX: ttl });
+		return true;
+	} catch (error) {
+		return false;
+	}
+}
 
 module.exports = {
 	validateRegisterInputs,
@@ -119,6 +152,9 @@ module.exports = {
 	isEmailExisted,
 	isPhoneNumberExisted,
 	getCustomerAccount,
+	getStaffAccount,
 	isPasswordMatched,
 	generateCustomerAuthToken,
+	generateStaffAuthToken,
+	logoutUser,
 }

@@ -239,5 +239,53 @@ router.post("/register", customerController.register);
  */
 router.post("/login", customerController.login)
 
+/**
+ * @swagger
+ * /customers/logout:
+ *   get:
+ *     summary: Logout customer account
+ *     tags: [Customers]
+ *     description: Logout customer account
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: auth_token
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Token for authentication and invalidation checking
+ *     responses:
+ *       200:
+ *         description: Status code represents that account logged out
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully!
+ *                     
+ *       500:
+ *         description: Logging out or server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Server error, cannot invalidate token!
+ *                 error:
+ *                   type: string
+ *                   example: The error message
+ */
 router.get("/logout", authenticateToken, customerController.logout)
 module.exports = router;

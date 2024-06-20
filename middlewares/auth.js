@@ -13,7 +13,7 @@ async function isTokenInvalidated(token) {
 }
 
 function verifyToken(token) {
-	const verified = jwt.verify(auth_token, process.env.JWT_TOKEN_SECRET_KEY)
+	const verified = jwt.verify(token, process.env.JWT_TOKEN_SECRET_KEY)
 	return verified
 }
 
@@ -25,7 +25,7 @@ const authenticateToken = async (req, res, next) => {
 			message: "No auth token, authorization denied!",
 		});
 	try {
-		const tokenVerified = jwt.verify(auth_token, process.env.JWT_TOKEN_SECRET_KEY)
+		const tokenVerified = verifyToken(auth_token)
 		if (!tokenVerified)
 			return res.status(400).json({
 				success: false,
@@ -40,6 +40,7 @@ const authenticateToken = async (req, res, next) => {
 		req.auth_token = auth_token
 		next()
 	} catch (error) {
+		console.log(error);
 		if (error.name === 'TokenExpiredError') 
 			return res.status(400).json({
 				success: false,
