@@ -1,15 +1,18 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
 const redisClient = require("../services/RedisClientServices")
 const {
 	validateRegisterInputs,
 	validateLoginInputs,
 	registerNewAccount,
 	isEmailExisted,
-	isPhoneNumberExisted
+	isPhoneNumberExisted,
+	getCustomerAccount,
+	isPasswordMatched,
+	generateCustomerAuthToken
 } = require("../services/AccountServices");
-
 const connection = require("../services/DBServices");
 
 
@@ -78,42 +81,41 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
 	try {
-		const { email, password } = req.body;
+		const { email, password } = req.body
+
 		const validationResult = validateLoginInputs(email, password)
-		if (!validationResult.success)
-			return res.status(400).json(validationResult);
-		const [result] = await connection.query(
-			"SELECT id, email, password FROM customers WHERE email = ? LIMIT 1",
-			[email]
-		);
-		if (result.length == 0)
+		if (!validationResult)
+			return res.status(400).json({
+				success: validationResult,
+				message: "Invalid account!"
+			})
+
+		const customerAccount = await getCustomerAccount(email)
+		if (!customerAccount)
 			return res.status(404).json({
 				success: false,
-				message: "This account does not exist"
+				message: "Account does not exist!"
 			})
-		const isPassMatched = await bcrypt.compare(password, result[0].password);
+		const isPassMatched = isPasswordMatched(password, customerAccount.password)
 		if (!isPassMatched)
 			return res.status(400).json({
 				success: false,
-				message: "Invalid password",
+				message: "Invalid password!",
 			});
-		const token = jwt.sign(
-			{ id: result[0].id },
-			process.env.JWT_TOKEN_SECRET_KEY,
-			{ expiresIn: "1d" }
-		);
+
+		const token = generateCustomerAuthToken(customerAccount.id)
 		return res.status(200).json({
 			success: true,
-			message: "Logged in successfully",
+			message: "Logged in successfully!",
 			data: {
 				auth_token: token,
-				name: (result[0].email.split("@"))[0],
+				name: ((customerAccount.email).split("@"))[0],
 			},
 		});
 	} catch (error) {
 		return res.status(500).json({
 			success: false,
-			message: "Database query error",
+			message: "Database query error!",
 			error: error.message,
 		});
 	}
@@ -121,14 +123,14 @@ exports.login = async (req, res) => {
 
 exports.logout = async (req, res) => {
 	try {
-		if (!redisClient.isReady)
-			await redisClient.connect();
+		if (!redisClient.isReady) await redisClient.connect();
 
 		const token = req.auth_token
 		const tokenDecoded = jwt.decode(token)
 		const ttl = tokenDecoded.exp - Math.floor(Date.now() / 1000)
 
-		await redisClient.set(token, 'blacklisted', { EX: ttl });
+		const result = await redisClient.set(token, 'blacklisted', { EX: ttl });
+		console.log(result);
 		res.status(200).json({
 			success: true,
 			message: "Logged out successfully!"

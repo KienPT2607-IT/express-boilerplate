@@ -1,8 +1,10 @@
+const jwt = require("jsonwebtoken");
+const bcrypt = require('bcryptjs');
+const dotenv = require('dotenv');
+
 const accountUtils = require("../utils/account_utils")
 const { formatDateToYYYYMMDD } = require("../utils/date_utils")
 const connection = require("../services/DBServices");
-
-const bcrypt = require('bcryptjs');
 const SALT_ROUNDS = 8;
 
 async function registerNewAccount(email, password, phone_number, dob, gender,) {
@@ -13,8 +15,7 @@ async function registerNewAccount(email, password, phone_number, dob, gender,) {
 			"INSERT INTO customers (email, password, phone_number, dob, gender) VALUES (?, ?, ?, ?, ?)",
 			[email, passHashed, phone_number, formattedDob, gender.toLowerCase()]
 		);
-		if (!result)
-			return false;
+		if (!result) return false;
 		return true;
 	} catch (error) {
 		return false
@@ -26,7 +27,7 @@ async function isEmailExisted(email) {
 		"SELECT email FROM customers WHERE email = ? LIMIT 1",
 		[email]
 	)
-	if (results.length == 1) 
+	if (results.length == 1)
 		return true
 	return false
 }
@@ -71,15 +72,53 @@ function validateRegisterInputs(email, password, confirmPassword, gender, dob) {
  * @returns 
  */
 function validateLoginInputs(email, password) {
-	if (!checkEmailValid(email) || !password.trim())
-		return false
+	if (
+		!accountUtils.checkEmailValid(email)
+		|| !password.trim()
+	) return false
 	return true
 }
+
+async function getCustomerAccount(email) {
+	try {
+		const [result] = await connection.query(
+			"SELECT id, email, password FROM customers WHERE email = ? LIMIT 1",
+			[email]
+		);
+		if (!result) return null
+		return result[0]
+	} catch (error) {
+		return null
+	}
+}
+
+async function isPasswordMatched(password, passHashed) {
+	try {
+		const isPassMatched = await bcrypt.compare(
+			password,
+			passHashed
+		);
+		if (!isPassMatched) return false
+		return true
+	} catch (error) {
+		return false
+	}
+}
+
+const generateCustomerAuthToken = (id) => jwt.sign(
+	{ id: id },
+	process.env.JWT_TOKEN_SECRET_KEY,
+	{ expiresIn: "1d" }
+);
+
 
 module.exports = {
 	validateRegisterInputs,
 	validateLoginInputs,
 	registerNewAccount,
 	isEmailExisted,
-	isPhoneNumberExisted
+	isPhoneNumberExisted,
+	getCustomerAccount,
+	isPasswordMatched,
+	generateCustomerAuthToken,
 }
