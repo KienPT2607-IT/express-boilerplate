@@ -9,7 +9,7 @@ const { route } = require("./products");
  * @swagger
  * /categories/:
  *   get:
- *     summary: Retrieve all categories
+ *     summary: Retrieve all active categories
  *     tags: [Categories]
  *     description: Retrieve a list of categories
  *     security:
@@ -45,10 +45,7 @@ const { route } = require("./products");
  *                         example: Lord of the Rings
  *                       description:
  *                         type: string
- *                         example: Build and recreate iconic moments from Middle-eart
- *                       is_active:
- *                         type: boolean
- *                         example: true
+ *                         example: Build and recreate iconic moments from Middle-earth
  *                       create_at:
  *                         type: string
  *                         example: 2024-06-14T09:37:49.000Z
@@ -67,7 +64,7 @@ const { route } = require("./products");
  *                   example: false
  *                 message:
  *                   type: string
- *                   example: Database query error
+ *                   example: The message informs to user
  *                 error:
  *                   type: string
  *                   example: The error message
@@ -107,6 +104,7 @@ router.get("/", isStaff("staff"), categoryController.getAllCategories)
  *               description:
  *                 type: string
  *                 example: this is the description
+ *                 required: false
  *     responses:
  *       201:
  *         description: Category added successfully
@@ -156,5 +154,88 @@ router.get("/", isStaff("staff"), categoryController.getAllCategories)
  */
 router.post("/add", isStaff("staff"), categoryController.addCategory)
 
-router.put("/update/:categoryId", isStaff("staff"), categoryController.updateCategory)
+/**
+ * @swagger
+ * /categories/update/{id}:
+ *   put:
+ *     summary: Update category 
+ *     tags: [Categories]
+ *     description: Update a category corresponding to the provided id
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the category
+ *       - in: header
+ *         name: auth_token
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Token for authentication - only staff can to this
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - description
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Star-war
+ *               description:
+ *                 type: string
+ *                 example: this is the description
+ *                 required: false
+ *     responses:
+ *       200:
+ *         description: Category updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Category updated!
+ *       400:
+ *         description: Client error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid name
+ *       500:
+ *         description: Error when executing query or server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Database query error
+ *                 error:
+ *                   type: string
+ *                   example: The error message
+ */
+router.put("/update/:id", isStaff("staff"), categoryController.updateCategory)
 module.exports = router

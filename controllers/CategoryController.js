@@ -1,8 +1,14 @@
-// @ts-nocheck
 require("dotenv").config();
 
 const connection = require("../services/DBServices");
-const { validateInput } = require("../services/CategoryServices");
+const {
+   validateInput,
+   insertCategory,
+   getAllActiveCategories,
+   checkCategoryExists,
+   updateCategory,
+   checkIdValid
+} = require("../services/CategoryServices");
 
 exports.addCategory = async (req, res) => {
    try {
@@ -12,20 +18,16 @@ exports.addCategory = async (req, res) => {
       if (!validationResult.success)
          return res.status(400).json(validationResult)
 
-      const [result] = await connection.query(
-         "INSERT INTO categories (name, description) values (?,?)",
-         [name.trim(), description ? description.trim() : null]
-      )
-      return res.status(201).json({
-         success: true,
-         message: "Category added",
-         category_id: result.insertId
-      });
+      const insertResult = await insertCategory(name, description)
+      if (!insertResult.success)
+         return res.status(500).json(insertResult)
+
+      insertResult.message = "Category inserted successfully!"
+      return res.status(201).json(insertResult);
    } catch (error) {
-      console.error("Error executing query:", error);
       res.status(500).json({
          success: false,
-         message: "Database query error",
+         message: "Server error!",
          error: error.message,
       });
    }
@@ -33,19 +35,15 @@ exports.addCategory = async (req, res) => {
 
 exports.getAllCategories = async (req, res) => {
    try {
-      const [results] = await connection.query(
-         "SELECT * FROM categories"
-      )
-      results.forEach((each) => each.is_active = each.is_active === 1)
-      return res.status(200).json({
-         success: true,
-         data: results
-      })
+      const result = await getAllActiveCategories()
+      if (!result.success) res.status(500).json(result)
+
+      return res.status(200).json(result)
    } catch (error) {
-      console.error("Error executing query:", error);
+      console.error(error);
       return res.status(500).json({
          success: false,
-         message: "Database query error",
+         message: "Server error!",
          error: error.message,
       });
    }
@@ -53,34 +51,34 @@ exports.getAllCategories = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
    try {
-      // check if there is a category match with this id
-      let [result] = await connection.query(
-         "SELECT id FROM categories WHERE id = ? LIMIT 1",
-         [req.params.categoryId]
-      )
-      if (!result)
-         return res.status(404).json({
-            success: false,
-            message: "No categories found"
-         })
+      // * Check if the id is positive number or sting in number format
+      let validationResult = checkIdValid(req.params.id)
+      if (!validationResult.success) 
+         return res.status(400).json(validationResult)
+
+      // * check if there is a category corresponding to id
+      validationResult = await checkCategoryExists(req.params.id)
+      if (!validationResult) {
+         if (validationResult.error) return res.status(500).json(validationResult)
+         return res.status(404).json(validationResult)
+      }
+      
       const { name, description } = req.body
-      const validationResult = validateInput(name, description)
+      validationResult = validateInput(name, description)
+
       if (!validationResult.success)
          return res.status(400).json(validationResult)
-         [result] = await connection.query(
-            "UPDATE categories SET name = ?, description = ? WHERE id = ?",
-            [name, description, req.params.categoryId]
-         )
-      console.log(result);
-      return res.status(200).json({
-         success: true,
-         message: "Category updated"
-      })
+
+      const updateResult = await updateCategory(req.params.id, name, description)
+      if (!updateResult.success) {
+         if (updateResult.error) return res.status(500).json(updateResult)
+         return res.status(400).json(updateResult)
+      }
+      return res.status(200).json(updateResult)
    } catch (error) {
-      console.error("Error executing query:", error);
       return res.status(500).json({
          success: false,
-         message: "Database query error",
+         message: "Server error!",
          error: error.message,
       });
    }
