@@ -9,11 +9,12 @@ const swaggerDefinition = {
       version: '1.0.0',
       description: 'Your API description',
    },
-   servers: [
-      {
-         url: process.env.SERVER_URL, // Change this to your server's URL
-      },
-   ],
+   apis: ["./routes/**/*.js"]
+   // servers: [
+   //    {
+   //       url: process.env.SERVER_URL, // Change this to your server's URL
+   //    },
+   // ],
 };
 
 const options = {
