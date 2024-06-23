@@ -3,7 +3,7 @@ const numberRegex = /^\d+$/
  * This function checks for product's name validation
  * The name length must be in range of 10 to 100 characters
  * @param {string} name - name of the product
- * @returns {boolean} If the product name is valid
+ * @returns If the product name is valid
  */
 function checkNameValid(name) {
    if (!name) return false
@@ -21,7 +21,7 @@ function checkNameValid(name) {
  * - if the price is float, maximum length of whole number part is 8 digits
  * and the fractional part is 2 digits 
  * @param {string} price 
- * @returns {boolean} If the product price id valid
+ * @returns If the product price id valid
  */
 function checkPriceValid(price) {
    if (!price.trim()) return false
@@ -41,7 +41,7 @@ function checkPriceValid(price) {
 /**
  * This function checks if the product's quantity is valid 
  * @param {number} quantity - The quantity of the product
- * @returns {boolean} If the quantity is valid
+ * @returns If the quantity is valid
  */
 function checkQuantityValid(quantity) {
    if (!numberRegex.test(quantity)) return false
@@ -56,7 +56,7 @@ function checkQuantityValid(quantity) {
  * This function checks for product's description validation
  * The description can be either string with any length or undefined (Not provided)
  * @param {string | undefined} description 
- * @returns {boolean} If the product description is valid
+ * @returns If the product description is valid
  */
 function checkDesValid(description) {
    if (typeof description === "undefined")
@@ -72,7 +72,7 @@ function checkDesValid(description) {
  * This function checks validation for all the ids of categories
  * that are going to be marked with product  
  * @param {Array<string>} categories - An array of category ids
- * @returns {boolean} If all the category ids are valid
+ * @returns If all the category ids are valid
  */
 function checkCategoriesValid(categories) {
    if (!categories) return false
