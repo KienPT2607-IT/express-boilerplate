@@ -71,17 +71,19 @@ function checkDesValid(description) {
 /**
  * This function checks validation for all the ids of categories
  * that are going to be marked with product  
- * @param {Array<string>} categories - An array of category ids
+ * @param {Array<string>} category_ids - An array of category ids
  * @returns If all the category ids are valid
  */
-function checkCategoriesValid(categories) {
-   if (!categories) return false
-   categories.forEach(each => {
+function checkCategoryIdsValid(category_ids) {
+   if (!category_ids) return false
+   category_ids.forEach(each => {
       if (!numberRegex.test(each)) return false
       each = parseInt(each, 10)
       if (each <= 0) return false
       if (each % 1 != 0) return false
    })
+   const categoryIdsSet = new Set(category_ids)
+   if (categoryIdsSet.size != category_ids.length) return false
    return true
 }
 
@@ -90,5 +92,5 @@ module.exports = {
    checkDesValid,
    checkPriceValid,
    checkQuantityValid,
-   checkCategoriesValid
+   checkCategoryIdsValid
 }
