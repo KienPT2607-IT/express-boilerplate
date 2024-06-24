@@ -149,11 +149,64 @@ const checkIdValid = function (id) {
    }
 }
 
+const disableCategory = async function (id) {
+   try {
+      const [result] = await connection.query(
+         `UPDATE categories 
+         SET is_active = NOT is_active
+         WHERE id = ${id} AND is_active = 1`,
+      )
+      console.log(result);
+      if (result.changedRows != 1 || result.affectedRows == 0) return {
+         success: false,
+         message: "Category is already disabled or ID not exists!"
+      }
+      return {
+         success: true,
+         message: "Category is disabled!"
+      }
+   } catch (error) {
+      console.log(error)
+      return {
+         success: false,
+         message: "Disable category failed!",
+         error: error.message
+      }
+   }
+}
+
+const enableCategory = async function (id) {
+   try {
+      const [result] = await connection.query(
+         `UPDATE categories 
+         SET is_active = NOT is_active
+         WHERE id = ${id} AND is_active = 0`,
+      )
+      if (result.changedRows != 1) return {
+         success: false,
+         message: "Category is already active or ID not exists!"
+      }
+      return {
+         success: true,
+         message: "Category is enabled!"
+      }
+   } catch (error) {
+      console.log(error);
+      return {
+         success: false,
+         message: "Enable category failed!",
+         error: error.message
+      }
+   }
+}
+
 module.exports = {
    validateInput,
    insertCategory,
    getAllActiveCategories,
    checkCategoryExists,
    updateCategory,
-   checkIdValid
+   checkIdValid,
+   disableCategory,
+   enableCategory
 }

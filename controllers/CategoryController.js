@@ -7,7 +7,9 @@ const {
    getAllActiveCategories,
    checkCategoryExists,
    updateCategory,
-   checkIdValid
+   checkIdValid,
+   disableCategory,
+   enableCategory,
 } = require("../services/CategoryServices");
 
 exports.addCategory = async (req, res) => {
@@ -53,7 +55,7 @@ exports.updateCategory = async (req, res) => {
    try {
       // * Check if the id is positive number or sting in number format
       let validationResult = checkIdValid(req.params.id)
-      if (!validationResult.success) 
+      if (!validationResult.success)
          return res.status(400).json(validationResult)
 
       // * check if there is a category corresponding to id
@@ -62,7 +64,7 @@ exports.updateCategory = async (req, res) => {
          if (validationResult.error) return res.status(500).json(validationResult)
          return res.status(404).json(validationResult)
       }
-      
+
       const { name, description } = req.body
       validationResult = validateInput(name, description)
 
@@ -76,6 +78,68 @@ exports.updateCategory = async (req, res) => {
       }
       return res.status(200).json(updateResult)
    } catch (error) {
+      return res.status(500).json({
+         success: false,
+         message: "Server error!",
+         error: error.message,
+      });
+   }
+}
+
+exports.disableCategory = async (req, res) => {
+   try {
+      // * Check if the id is positive number or sting in number format
+      let validationResult = checkIdValid(req.params.id)
+      if (!validationResult.success)
+         return res.status(400).json(validationResult)
+
+      // * check if there is a category corresponding to id
+      validationResult = await checkCategoryExists(req.params.id)
+      if (!validationResult) {
+         if (validationResult.error) return res.status(500).json(validationResult)
+         return res.status(404).json(validationResult)
+      }
+
+      const queryResult = await disableCategory(req.params.id)
+      if (!queryResult.success) {
+         const statusCode = queryResult.error ? 500 : 400
+         return res.status(statusCode).json(queryResult)
+      }
+      return res.status(200).json(queryResult)
+   } catch (error) {
+      return res.status(500).json({
+         success: false,
+         message: "Server error!",
+         error: error.message,
+      });
+   }
+}
+
+exports.enableCategory = async (req, res) => {
+   try {
+      // * Check if the id is positive number or sting in number format
+      let validationResult = checkIdValid(req.params.id)
+      if (!validationResult.success)
+         return res.status(400).json(validationResult)
+
+      // * check if there is a category corresponding to id
+      validationResult = await checkCategoryExists(req.params.id)
+
+
+      if (!validationResult) {
+         if (validationResult.error) return res.status(500).json(validationResult)
+         return res.status(404).json(validationResult)
+      }
+
+      const queryResult = await enableCategory(req.params.id)
+      if (!queryResult.success) {
+         const statusCode = queryResult.error ? 500 : 400
+         return res.status(statusCode).json(queryResult)
+      }
+      return res.status(200).json(queryResult)
+
+   } catch (error) {
+      console.error(error);
       return res.status(500).json({
          success: false,
          message: "Server error!",

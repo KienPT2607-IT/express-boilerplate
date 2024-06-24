@@ -4,7 +4,7 @@ const router = express.Router();
 const categoryController = require("../controllers/CategoryController")
 const { isStaff } = require("../middlewares/auth");
 const { route } = require("./products");
-
+const ADMIN_ROLE = "admin"
 /**
  * @swagger
  * /categories/:
@@ -152,7 +152,7 @@ router.get("/", isStaff("staff"), categoryController.getAllCategories)
  *                   type: string
  *                   example: The error message
  */
-router.post("/add", isStaff("staff"), categoryController.addCategory)
+router.post("/add", isStaff(ADMIN_ROLE), categoryController.addCategory)
 
 /**
  * @swagger
@@ -237,5 +237,143 @@ router.post("/add", isStaff("staff"), categoryController.addCategory)
  *                   type: string
  *                   example: The error message
  */
-router.put("/update/:id", isStaff("staff"), categoryController.updateCategory)
+router.put("/update/:id", isStaff(ADMIN_ROLE), categoryController.updateCategory)
+
+/**
+ * @swagger
+ * /categories/disable/{id}:
+ *   put:
+ *     summary: Deactivate a category 
+ *     tags: [Categories]
+ *     description: Deactivate a category corresponding to the provided id
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the category
+ *       - in: header
+ *         name: auth_token
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Token for authentication - only admin can to this
+ *     responses:
+ *       200:
+ *         description: Category disabled!
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Category is disable!
+ *       400:
+ *         description: Client error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Category is already disabled!
+ *       500:
+ *         description: Error when executing query or server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ *                 error:
+ *                   type: string
+ *                   example: The error message
+ */
+router.put("/disable/:id", isStaff(ADMIN_ROLE), categoryController.disableCategory)
+
+/**
+ * @swagger
+ * /categories/enable/{id}:
+ *   put:
+ *     summary: Activate a category 
+ *     tags: [Categories]
+ *     description: Activate a category corresponding to the provided id
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the category
+ *       - in: header
+ *         name: auth_token
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Token for authentication - only admin can to this
+ *     responses:
+ *       200:
+ *         description: Category enabled!
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Category is enabled!
+ *       400:
+ *         description: Client error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Category is already enabled!
+ *       500:
+ *         description: Error when executing query or server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ *                 error:
+ *                   type: string
+ *                   example: The error message
+ */
+router.put("/enable/:id", isStaff(ADMIN_ROLE), categoryController.enableCategory)
+
+
 module.exports = router
