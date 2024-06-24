@@ -1,4 +1,5 @@
 const multer = require('multer');
+const {v4: uuidv4} = require('uuid');
 const path = require('path');
 const fs = require('fs');
 
@@ -12,7 +13,8 @@ const createStorage = (desFolder) => multer.diskStorage({
          callback(null, desPath)
       },
       filename: (req, file, callback) => {
-         callback(null, file.originalname)
+         const uniqueFileName = `${uuidv4()}${Date.now()}.${path.extname(file.originalname)}`
+         callback(null, uniqueFileName)
       }
    })
 
