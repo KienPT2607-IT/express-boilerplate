@@ -60,9 +60,9 @@ exports.updateCategory = async (req, res) => {
 
       // * check if there is a category corresponding to id
       validationResult = await checkCategoryExists(req.params.id)
-      if (!validationResult) {
-         if (validationResult.error) return res.status(500).json(validationResult)
-         return res.status(404).json(validationResult)
+      if (!validationResult.success) {
+         const statusCode = validationResult.error ? 500 : 404
+         return res.status(statusCode).json(validationResult)
       }
 
       const { name, description } = req.body
@@ -71,12 +71,12 @@ exports.updateCategory = async (req, res) => {
       if (!validationResult.success)
          return res.status(400).json(validationResult)
 
-      const updateResult = await updateCategory(req.params.id, name, description)
-      if (!updateResult.success) {
-         if (updateResult.error) return res.status(500).json(updateResult)
-         return res.status(400).json(updateResult)
+      const queryResult = await updateCategory(req.params.id, name, description)
+      if (!queryResult.success) {
+         const statusCode = queryResult.error ? 500 : 400
+         return res.status(statusCode).json(queryResult)
       }
-      return res.status(200).json(updateResult)
+      return res.status(200).json(queryResult)
    } catch (error) {
       return res.status(500).json({
          success: false,
@@ -93,13 +93,14 @@ exports.disableCategory = async (req, res) => {
       if (!validationResult.success)
          return res.status(400).json(validationResult)
 
-      // * check if there is a category corresponding to id
+      // * Check if there is a category corresponding to id
       validationResult = await checkCategoryExists(req.params.id)
       if (!validationResult) {
          if (validationResult.error) return res.status(500).json(validationResult)
          return res.status(404).json(validationResult)
       }
 
+      // * Query and check if category is disable successfully
       const queryResult = await disableCategory(req.params.id)
       if (!queryResult.success) {
          const statusCode = queryResult.error ? 500 : 400
@@ -131,6 +132,7 @@ exports.enableCategory = async (req, res) => {
          return res.status(404).json(validationResult)
       }
 
+      // * Query and check if category is enable successfully
       const queryResult = await enableCategory(req.params.id)
       if (!queryResult.success) {
          const statusCode = queryResult.error ? 500 : 400

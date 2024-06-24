@@ -88,7 +88,7 @@ const authenticateToken = async (req, res, next) => {
 		}
 	};
 
-	const isStaff = (allowRole) =>  async(req, res, next) => {
+	const isStaff = (allowRoles) =>  async(req, res, next) => {
 		const token = req.header("auth_token");
 		if (!token)
 			return res.status(401).json({
@@ -110,7 +110,7 @@ const authenticateToken = async (req, res, next) => {
 					message: "Token invalidated, authorization denied!",
 				})
 				
-			if (allowRole !== tokenVerified.role) 
+			if (!allowRoles.include(tokenVerified.role)) 
 				return res.status(401).json({
 					success: false,
 					message: "Not authorized for this action, authorization denied!",

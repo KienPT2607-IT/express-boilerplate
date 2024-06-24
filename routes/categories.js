@@ -5,6 +5,7 @@ const categoryController = require("../controllers/CategoryController")
 const { isStaff } = require("../middlewares/auth");
 const { route } = require("./products");
 const ADMIN_ROLE = "admin"
+const STAFF_ROLE = "staff"
 /**
  * @swagger
  * /categories/:
@@ -69,7 +70,7 @@ const ADMIN_ROLE = "admin"
  *                   type: string
  *                   example: The error message
  */
-router.get("/", isStaff("staff"), categoryController.getAllCategories)
+router.get("/", isStaff([STAFF_ROLE]), categoryController.getAllCategories)
 
 
 /**
@@ -152,7 +153,7 @@ router.get("/", isStaff("staff"), categoryController.getAllCategories)
  *                   type: string
  *                   example: The error message
  */
-router.post("/add", isStaff(ADMIN_ROLE), categoryController.addCategory)
+router.post("/add", isStaff([ADMIN_ROLE]), categoryController.addCategory)
 
 /**
  * @swagger
@@ -175,7 +176,7 @@ router.post("/add", isStaff(ADMIN_ROLE), categoryController.addCategory)
  *         schema:
  *           type: string
  *         required: true
- *         description: Token for authentication - only staff can to this
+ *         description: Token for authentication - only admin can to this
  *     requestBody:
  *       required: true
  *       content:
@@ -237,7 +238,7 @@ router.post("/add", isStaff(ADMIN_ROLE), categoryController.addCategory)
  *                   type: string
  *                   example: The error message
  */
-router.put("/update/:id", isStaff(ADMIN_ROLE), categoryController.updateCategory)
+router.put("/update/:id", isStaff([ADMIN_ROLE]), categoryController.updateCategory)
 
 /**
  * @swagger
@@ -305,7 +306,7 @@ router.put("/update/:id", isStaff(ADMIN_ROLE), categoryController.updateCategory
  *                   type: string
  *                   example: The error message
  */
-router.put("/disable/:id", isStaff(ADMIN_ROLE), categoryController.disableCategory)
+router.put("/disable/:id", isStaff([ADMIN_ROLE]), categoryController.disableCategory)
 
 /**
  * @swagger
@@ -373,7 +374,7 @@ router.put("/disable/:id", isStaff(ADMIN_ROLE), categoryController.disableCatego
  *                   type: string
  *                   example: The error message
  */
-router.put("/enable/:id", isStaff(ADMIN_ROLE), categoryController.enableCategory)
+router.put("/enable/:id", isStaff([ADMIN_ROLE]), categoryController.enableCategory)
 
 
 module.exports = router
