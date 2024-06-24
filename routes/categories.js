@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const categoryController = require("../controllers/CategoryController")
-const { isStaff } = require("../middlewares/auth");
+const { isStaff, authenticateToken } = require("../middlewares/auth");
 const { route } = require("./products");
 const ADMIN_ROLE = "admin"
 const STAFF_ROLE = "staff"
@@ -70,8 +70,7 @@ const STAFF_ROLE = "staff"
  *                   type: string
  *                   example: The error message
  */
-router.get("/", isStaff([STAFF_ROLE]), categoryController.getAllCategories)
-
+router.get("/", authenticateToken, isStaff([STAFF_ROLE]), categoryController.getAllCategories)
 
 /**
  * @swagger
@@ -153,7 +152,7 @@ router.get("/", isStaff([STAFF_ROLE]), categoryController.getAllCategories)
  *                   type: string
  *                   example: The error message
  */
-router.post("/add", isStaff([ADMIN_ROLE]), categoryController.addCategory)
+router.post("/add", authenticateToken, isStaff([ADMIN_ROLE]), categoryController.addCategory)
 
 /**
  * @swagger
@@ -238,7 +237,7 @@ router.post("/add", isStaff([ADMIN_ROLE]), categoryController.addCategory)
  *                   type: string
  *                   example: The error message
  */
-router.put("/update/:id", isStaff([ADMIN_ROLE]), categoryController.updateCategory)
+router.put("/update/:id", authenticateToken, isStaff([ADMIN_ROLE]), categoryController.updateCategory)
 
 /**
  * @swagger
@@ -306,7 +305,7 @@ router.put("/update/:id", isStaff([ADMIN_ROLE]), categoryController.updateCatego
  *                   type: string
  *                   example: The error message
  */
-router.put("/disable/:id", isStaff([ADMIN_ROLE]), categoryController.disableCategory)
+router.put("/disable/:id", authenticateToken, isStaff([ADMIN_ROLE]), categoryController.disableCategory)
 
 /**
  * @swagger
@@ -374,7 +373,7 @@ router.put("/disable/:id", isStaff([ADMIN_ROLE]), categoryController.disableCate
  *                   type: string
  *                   example: The error message
  */
-router.put("/enable/:id", isStaff([ADMIN_ROLE]), categoryController.enableCategory)
+router.put("/enable/:id", authenticateToken, isStaff([ADMIN_ROLE]), categoryController.enableCategory)
 
 
 module.exports = router
