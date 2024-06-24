@@ -70,7 +70,7 @@ const STAFF_ROLE = "staff"
  *                   type: string
  *                   example: The error message
  */
-router.get("/", authenticateToken, isStaff([STAFF_ROLE]), categoryController.getAllCategories)
+router.get("/", authenticateToken, isStaff([STAFF_ROLE, ADMIN_ROLE]), categoryController.getAllCategories)
 
 /**
  * @swagger
