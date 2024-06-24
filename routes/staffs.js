@@ -1,15 +1,15 @@
 const express = require("express");
 const router = express.Router();
 
-const staffController = require("../controllers/staff_controller");
-// const { } = require("../middlewares/auth");
+const staffController = require("../controllers/StaffController");
+const { authenticateToken } = require("../middlewares/auth");
 
 /**
  * @swagger
  * /staffs/login:
  *   post:
  *     summary: User login with own account
- *     tags: [Staff]
+ *     tags: [Staffs]
  *     description: Authenticate and Log user in with the provided account
  *     requestBody:
  *       content:
@@ -22,11 +22,11 @@ const staffController = require("../controllers/staff_controller");
  *             properties:
  *               email:
  *                 type: string
- *                 example: john.doe@example.com
+ *                 example: admin@gmail.com
  *               password:
  *                 type: string
  *                 format: password
- *                 example: P@ssw0rd
+ *                 example: 012345678
  *     responses:
  *       200:
  *         description: Logged in successfully
@@ -81,5 +81,55 @@ const staffController = require("../controllers/staff_controller");
  *                   example: Error message
  */
 router.post("/login", staffController.login)
+
+/**
+ * @swagger
+ * /staffs/logout:
+ *   get:
+ *     summary: Logout staff account
+ *     tags: [Staffs]
+ *     description: Logout staff account
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: auth_token
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Token for authentication and invalidation checking
+ *     responses:
+ *       200:
+ *         description: Status code represents that account logged out
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully!
+ *                     
+ *       500:
+ *         description: Logging out or server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Server error, cannot invalidate token!
+ *                 error:
+ *                   type: string
+ *                   example: The error message
+ */
+router.get("/logout", authenticateToken, staffController.logout)
 
 module.exports = router

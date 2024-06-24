@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const customerController = require("../controllers/customer_controller");
-const { isCustomer } = require("../middlewares/auth");
+const customerController = require("../controllers/CustomerController");
+const { isCustomer, authenticateToken } = require("../middlewares/auth");
 
 /**
  * @swagger
@@ -83,9 +83,12 @@ router.get("/", customerController.getAllUsers);
  *           schema:
  *             type: object
  *             required:
- *               - name
  *               - email
  *               - password
+ *               - confirm_password
+ *               - phone_number
+ *               - gender
+ *               - dob
  *             properties:
  *               email:
  *                 type: string
@@ -236,4 +239,53 @@ router.post("/register", customerController.register);
  */
 router.post("/login", customerController.login)
 
+/**
+ * @swagger
+ * /customers/logout:
+ *   get:
+ *     summary: Logout customer account
+ *     tags: [Customers]
+ *     description: Logout customer account
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: auth_token
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Token for authentication and invalidation checking
+ *     responses:
+ *       200:
+ *         description: Status code represents that account logged out
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully!
+ *                     
+ *       500:
+ *         description: Logging out or server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Server error, cannot invalidate token!
+ *                 error:
+ *                   type: string
+ *                   example: The error message
+ */
+router.get("/logout", authenticateToken, customerController.logout)
 module.exports = router;

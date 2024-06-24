@@ -1,0 +1,85 @@
+require("dotenv").config();
+
+const connection = require("../services/DBServices");
+const {
+   validateInput,
+   insertCategory,
+   getAllActiveCategories,
+   checkCategoryExists,
+   updateCategory,
+   checkIdValid
+} = require("../services/CategoryServices");
+
+exports.addCategory = async (req, res) => {
+   try {
+      const { name, description } = req.body;
+
+      const validationResult = validateInput(name, description)
+      if (!validationResult.success)
+         return res.status(400).json(validationResult)
+
+      const insertResult = await insertCategory(name, description)
+      if (!insertResult.success)
+         return res.status(500).json(insertResult)
+
+      insertResult.message = "Category inserted successfully!"
+      return res.status(201).json(insertResult);
+   } catch (error) {
+      res.status(500).json({
+         success: false,
+         message: "Server error!",
+         error: error.message,
+      });
+   }
+}
+
+exports.getAllCategories = async (req, res) => {
+   try {
+      const result = await getAllActiveCategories()
+      if (!result.success) res.status(500).json(result)
+
+      return res.status(200).json(result)
+   } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+         success: false,
+         message: "Server error!",
+         error: error.message,
+      });
+   }
+}
+
+exports.updateCategory = async (req, res) => {
+   try {
+      // * Check if the id is positive number or sting in number format
+      let validationResult = checkIdValid(req.params.id)
+      if (!validationResult.success) 
+         return res.status(400).json(validationResult)
+
+      // * check if there is a category corresponding to id
+      validationResult = await checkCategoryExists(req.params.id)
+      if (!validationResult) {
+         if (validationResult.error) return res.status(500).json(validationResult)
+         return res.status(404).json(validationResult)
+      }
+      
+      const { name, description } = req.body
+      validationResult = validateInput(name, description)
+
+      if (!validationResult.success)
+         return res.status(400).json(validationResult)
+
+      const updateResult = await updateCategory(req.params.id, name, description)
+      if (!updateResult.success) {
+         if (updateResult.error) return res.status(500).json(updateResult)
+         return res.status(400).json(updateResult)
+      }
+      return res.status(200).json(updateResult)
+   } catch (error) {
+      return res.status(500).json({
+         success: false,
+         message: "Server error!",
+         error: error.message,
+      });
+   }
+}
