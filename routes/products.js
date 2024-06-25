@@ -3,11 +3,8 @@ const router = express.Router();
 
 const { isAuth, authenticateToken } = require("../middlewares/auth");
 const { uploadProductImage } = require("../middlewares/upload")
-const { } = require("../services/ProductServices")
 const productController = require("../controllers/ProductController")
-const multer = require('multer');
-const path = require('path');
-const ADMIN_ROLE = "admin"
+const ADMIN_ROLE = "admin", STAFF_ROLE = "staff", CUSTOMER_ROLE = "customer"
 
 /**
  * @swagger
@@ -110,6 +107,13 @@ router.post(
    isAuth([ADMIN_ROLE]),
    uploadProductImage("products", "image"),
    productController.addProduct
+)
+
+router.get(
+   "/",
+   authenticateToken,
+   isAuth([ADMIN_ROLE, STAFF_ROLE, CUSTOMER_ROLE]),
+   productController.getProducts
 )
 
 module.exports = router
