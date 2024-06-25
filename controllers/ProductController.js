@@ -6,16 +6,23 @@ const {
 const { removeUploadFile } = require("../utils/file_utils")
 
 exports.addProduct = async (req, res) => {
-   const { name, price, quantity, category_ids, description } = req.body
+   const { name, price, quantity, description } = req.body
+   let { category_ids } = req.body
    try {
-      
+      // TODO: This is for test only, maybe need to remove later
+      // ? The swagger sends ids in an array but those ids are treated as a single string
+      if (Array.isArray(category_ids) && category_ids.length === 1 && typeof category_ids[0] === 'string') {
+         category_ids = category_ids[0].split(',');
+      }
+
       // * Validate the data of the product to be inserted
       const validateResult = validateNewProductInputs(
          name, price, quantity, category_ids, description
       )
-      if (!validateResult.success)
+      if (!validateResult.success) {
+         removeUploadFile(req.file.filename, "products")
          return res.status(400).json(validateResult)
-
+      }
       // * Insert the product into db
       const addNewProductResult = await addNewProduct(
          name,
@@ -34,6 +41,7 @@ exports.addProduct = async (req, res) => {
       return res.status(201).json(addNewProductResult)
    } catch (error) {
       console.error("Error executing query:", error);
+      removeUploadFile(req.file.filename, "products")
       res.status(500).json({
          success: false,
          message: "Database query error",

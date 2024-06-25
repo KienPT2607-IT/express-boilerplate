@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { isStaff, isCustomer, authenticateToken } = require("../middlewares/auth");
+const { isAuth, authenticateToken } = require("../middlewares/auth");
 const { uploadProductImage } = require("../middlewares/upload")
 const { } = require("../services/ProductServices")
 const productController = require("../controllers/ProductController")
@@ -37,7 +37,7 @@ const ADMIN_ROLE = "admin"
  *             properties:
  *               name:
  *                 type: string
- *                 example: Star-war
+ *                 example: Star-war the fallen start
  *               price:
  *                 type: string
  *                 example: 16.7
@@ -47,8 +47,8 @@ const ADMIN_ROLE = "admin"
  *               category_ids:
  *                 type: array
  *                 items: 
- *                   types: string
- *                   example: [2, 9]
+ *                   types: integer
+ *                 example: [2, 9]
  *               description:
  *                 type: string
  *                 example: this is the description
@@ -107,7 +107,7 @@ const ADMIN_ROLE = "admin"
 router.post(
    "/add",
    authenticateToken,
-   isStaff([ADMIN_ROLE]),
+   isAuth([ADMIN_ROLE]),
    uploadProductImage("products", "image"),
    productController.addProduct
 )

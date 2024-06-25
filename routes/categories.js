@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const categoryController = require("../controllers/CategoryController")
-const { isStaff, authenticateToken } = require("../middlewares/auth");
+const { isAuth, authenticateToken } = require("../middlewares/auth");
 const { route } = require("./products");
 const ADMIN_ROLE = "admin"
 const STAFF_ROLE = "staff"
@@ -70,7 +70,7 @@ const STAFF_ROLE = "staff"
  *                   type: string
  *                   example: The error message
  */
-router.get("/", authenticateToken, isStaff([STAFF_ROLE, ADMIN_ROLE]), categoryController.getAllCategories)
+router.get("/", authenticateToken, isAuth([STAFF_ROLE, ADMIN_ROLE]), categoryController.getAllCategories)
 
 /**
  * @swagger
@@ -152,7 +152,7 @@ router.get("/", authenticateToken, isStaff([STAFF_ROLE, ADMIN_ROLE]), categoryCo
  *                   type: string
  *                   example: The error message
  */
-router.post("/add", authenticateToken, isStaff([ADMIN_ROLE]), categoryController.addCategory)
+router.post("/add", authenticateToken, isAuth([ADMIN_ROLE]), categoryController.addCategory)
 
 /**
  * @swagger
@@ -237,7 +237,7 @@ router.post("/add", authenticateToken, isStaff([ADMIN_ROLE]), categoryController
  *                   type: string
  *                   example: The error message
  */
-router.put("/update/:id", authenticateToken, isStaff([ADMIN_ROLE]), categoryController.updateCategory)
+router.put("/update/:id", authenticateToken, isAuth([ADMIN_ROLE]), categoryController.updateCategory)
 
 /**
  * @swagger
@@ -305,7 +305,7 @@ router.put("/update/:id", authenticateToken, isStaff([ADMIN_ROLE]), categoryCont
  *                   type: string
  *                   example: The error message
  */
-router.put("/disable/:id", authenticateToken, isStaff([ADMIN_ROLE]), categoryController.disableCategory)
+router.put("/disable/:id", authenticateToken, isAuth([ADMIN_ROLE]), categoryController.disableCategory)
 
 /**
  * @swagger
@@ -373,7 +373,7 @@ router.put("/disable/:id", authenticateToken, isStaff([ADMIN_ROLE]), categoryCon
  *                   type: string
  *                   example: The error message
  */
-router.put("/enable/:id", authenticateToken, isStaff([ADMIN_ROLE]), categoryController.enableCategory)
+router.put("/enable/:id", authenticateToken, isAuth([ADMIN_ROLE]), categoryController.enableCategory)
 
 
 module.exports = router

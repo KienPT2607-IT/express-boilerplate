@@ -70,6 +70,7 @@ async function addNewProduct(name, price, quantity, description, image_path, cat
       const productCategoriesValues = category_ids.map(
          category_id => [productId, category_id]
       )
+      console.log(productCategoriesValues);
       await connection.query(
          `INSERT INTO product_categories (product_id, category_id) VALUES ?`,
          [productCategoriesValues]
@@ -93,6 +94,7 @@ async function addNewProduct(name, price, quantity, description, image_path, cat
          message: "A category is inactive!",
          error: error.message
       }
+      console.log( error);
       return {
          success: false,
          message: "Error inserting product and categories!",
