@@ -45,23 +45,23 @@ exports.register = async (req, res) => {
 			success: false,
 			message: "Invalid account information!"
 		});
-
+		
 		if (await isEmailExisted(email)) return res.status(400).json({
 			success: false,
 			message: "Duplicated email!",
 		});
-
+		
 		if (await isPhoneNumberExisted(phone_number)) return res.status(400).json({
 			success: false,
 			message: "Duplicated phone number!",
 		});
-
+		
 		const result = await registerNewAccount(email, password, phone_number, dob, gender)
 		if (!result) return res.status(400).json({
 			success: false,
 			message: "Cannot register new account!",
 		});
-
+		
 		return res.status(201).json({
 			success: true,
 			message: "Account registered!",

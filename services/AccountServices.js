@@ -14,8 +14,8 @@ async function registerNewAccount(email, password, phone_number, dob, gender,) {
 		const formattedDob = formatDateToYYYYMMDD(dob);
 		const passHashed = await bcrypt.hash(password, SALT_ROUNDS);
 		const [result] = await connection.query(
-			"INSERT INTO customers (email, password, phone_number, dob, gender) VALUES (?, ?, ?, ?, ?)",
-			[email, passHashed, phone_number, formattedDob, gender.toLowerCase()]
+			"INSERT INTO customers (email, password, phone_number, dob, gender, role) VALUES (?, ?, ?, ?, ?, ?)",
+			[email, passHashed, phone_number, formattedDob, gender.toLowerCase(), 3]
 		);
 		if (!result) return false;
 		return true;
