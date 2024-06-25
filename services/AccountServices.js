@@ -7,6 +7,7 @@ const accountUtils = require("../utils/account_utils")
 const { formatDateToYYYYMMDD } = require("../utils/date_utils")
 const connection = require("../services/DBServices");
 const SALT_ROUNDS = 8;
+const TOKEN_EXP_TIME = "1d"
 
 async function registerNewAccount(email, password, phone_number, dob, gender,) {
 	try {
@@ -83,11 +84,14 @@ function validateLoginInputs(email, password) {
 async function getCustomerAccount(email) {
 	try {
 		const [result] = await connection.query(
-			"SELECT id, email, password FROM customers WHERE email = ? LIMIT 1",
+			`SELECT customers.id, roles.name as role, email, password 
+			FROM customers 
+			INNER JOIN roles ON customers.role = roles.id
+			WHERE email = ? 
+			LIMIT 1`,
 			[email]
 		);
 		if (!result) return null
-		return result[0]
 	} catch (error) {
 		return null
 	}
@@ -96,7 +100,11 @@ async function getCustomerAccount(email) {
 async function getStaffAccount(email) {
 	try {
 		const [result] = await connection.query(
-			"SELECT id, role, email, password FROM staffs WHERE email = ? LIMIT 1",
+			`SELECT staffs.id, roles.name as role, email, password 
+			FROM staffs 
+			INNER JOIN roles ON staffs.role = roles.id 
+			WHERE email = ? 
+			LIMIT 1`,
 			[email]
 		);
 		if (!result) return null
@@ -119,16 +127,10 @@ async function isPasswordMatched(password, passHashed) {
 	}
 }
 
-const generateCustomerAuthToken = (id) => jwt.sign(
-	{ id: id },
-	process.env.JWT_TOKEN_SECRET_KEY,
-	{ expiresIn: "1d" }
-);
-
-const generateStaffAuthToken = (id, role) => jwt.sign(
+const generateAuthToken = (id, role) => jwt.sign(
 	{ id: id, role: role },
 	process.env.JWT_TOKEN_SECRET_KEY,
-	{ expiresIn: "1d" }
+	{ expiresIn: TOKEN_EXP_TIME }
 );
 
 async function logoutUser(token) {
@@ -154,7 +156,6 @@ module.exports = {
 	getCustomerAccount,
 	getStaffAccount,
 	isPasswordMatched,
-	generateCustomerAuthToken,
-	generateStaffAuthToken,
+	generateAuthToken,
 	logoutUser,
 }

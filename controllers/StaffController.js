@@ -3,7 +3,7 @@ require("dotenv").config();
 const {
    validateLoginInputs,
    getStaffAccount,
-   generateStaffAuthToken,
+   generateAuthToken,
    isPasswordMatched,
    logoutUser
 } = require("../services/AccountServices");
@@ -29,8 +29,8 @@ exports.login = async (req, res) => {
             success: false,
             message: "Invalid password",
          });
-
-      const token = generateStaffAuthToken(staffAccount.id, staffAccount.role);
+      console.log(staffAccount);
+      const token = generateAuthToken(staffAccount.id, staffAccount.role);
       return res.status(200).json({
          success: true,
          message: "Logged in successfully",
@@ -53,11 +53,10 @@ exports.login = async (req, res) => {
 exports.logout = async (req, res) => {
    try {
       const result = await logoutUser(req.auth_token)
-      if (!result)
-         return res.status(500).json({
-            success: result,
-            message: "Server error, cannot invalidate token!"
-         })
+      if (!result) return res.status(500).json({
+         success: result,
+         message: "Server error, cannot invalidate token!"
+      })
       return res.status(200).json({
          success: result,
          message: "Logged out successfully!"
