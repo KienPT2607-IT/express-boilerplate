@@ -97,6 +97,7 @@ const isAuth = (allowRoles) => async (req, res, next) => {
 				success: false,
 				message: "Not authorized for this action, authorization denied!",
 			});
+		req.role = tokenVerifiedResult.token_payload.role
 		next()
 	} catch (error) {
 		if (error.name === 'TokenExpiredError') return res.status(401).json({
