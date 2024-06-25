@@ -92,6 +92,7 @@ async function getCustomerAccount(email) {
 			[email]
 		);
 		if (!result) return null
+		return result[0]
 	} catch (error) {
 		return null
 	}
