@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { isStaff, isCustomer, authenticateToken } = require("../middlewares/auth");
+const { isAuth, authenticateToken } = require("../middlewares/auth");
 const { uploadProductImage } = require("../middlewares/upload")
 const { } = require("../services/ProductServices")
 const productController = require("../controllers/ProductController")
@@ -107,7 +107,7 @@ const ADMIN_ROLE = "admin"
 router.post(
    "/add",
    authenticateToken,
-   isStaff([ADMIN_ROLE]),
+   isAuth([ADMIN_ROLE]),
    uploadProductImage("products", "image"),
    productController.addProduct
 )
