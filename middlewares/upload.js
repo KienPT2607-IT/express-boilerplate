@@ -8,12 +8,12 @@ const { UPLOADS_BASE_PATH } = require("../utils/constants")
 const createStorage = (desFolder) => multer.diskStorage({
       destination: async (req, res, callback) => {
          const desPath = path.join(UPLOADS_BASE_PATH, desFolder)
-         if (fs.existsSync(desPath)) 
+         if (!fs.existsSync(desPath)) 
             fs.mkdirSync(desPath, {recursive: true})
          callback(null, desPath)
       },
       filename: (req, file, callback) => {
-         const uniqueFileName = `${uuidv4()}${Date.now()}.${path.extname(file.originalname)}`
+         const uniqueFileName = `${uuidv4()}${Date.now()}${path.extname(file.originalname)}`
          callback(null, uniqueFileName)
       }
    })
