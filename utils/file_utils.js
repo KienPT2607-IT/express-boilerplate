@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const util = require("util");
 const unlink = util.promisify(fs.unlink);
-const { UPLOADS_BASE_PATH } = require("../utils/constants")
+const { UPLOADS_BASE_PATH } = require("../utils/constants");
 
 /**
  * This function removes the uploaded file from the server's folder structure
@@ -16,4 +16,22 @@ async function removeUploadFile(filePath, dirPath) {
    } catch (error) { }
 }
 
-module.exports = { removeUploadFile }
+/**
+ * This function takes an array of products 
+ * then process their image path for client access
+ * @param {Array<object>} products - the list of product retrieved from DB
+ */
+function serverProductImagePaths(products) {
+   products.forEach(each => {
+      each.image_path = path.join(
+         `/products`,
+         each.image_path
+      );
+   });
+   return products;
+}
+
+module.exports = {
+   removeUploadFile,
+   serverProductImagePaths
+};
