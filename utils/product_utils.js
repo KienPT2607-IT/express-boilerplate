@@ -96,10 +96,10 @@ function processCategories(products) {
    products.forEach(each => {
       each.price = parseFloat(each.price);
       if (!each.categories.includes(",")) {
-         const [id, name] = product.categories.split(":");
-         product.categories = [{ id, name }];
+         const [id, name] = each.categories.split(":");
+         each.categories = [{ id, name }];
       } else {
-         product.categories = product.categories.split(",").map(category => {
+         each.categories = each.categories.split(",").map(category => {
             const [id, name] = category.split(":");
             return { id, name };
          });
