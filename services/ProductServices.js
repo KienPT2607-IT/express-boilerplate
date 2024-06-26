@@ -10,6 +10,7 @@ const {
 	checkCategoryIdsValid,
 } = require("../utils/product_utils");
 const { UPLOADS_BASE_PATH } = require("../utils/constants");
+const { serverProductImagePaths } = require("../utils/file_utils");
 
 /**
  * The function checks for the validation of the product details
@@ -82,9 +83,9 @@ async function addNewProduct(
 
 		// * Execute query to insert product
 		const [insertProductResult] = await connection.query(
-			`INSERT INTO products (name, price, quantity, description, image_path) 
-         VALUES (?, ?, ?, ?, ?)`,
-			[name, price, quantity, description, image_path]
+			`INSERT INTO products (name, price, quantity, quantity_in_stock, description, image_path) 
+         VALUES (?, ?, ?, ?, ?, ?)`,
+			[name, price, quantity, quantity, description, image_path]
 		);
 
 		const productId = insertProductResult.insertId;
@@ -130,24 +131,34 @@ async function addNewProduct(
 
 async function getProductsForCustomer() {
 	try {
-		const [queryResults] = await connection.query(
+		let [queryResults] = await connection.query(
 			`SELECT 
-			name, price, quantity, like_count, dislike_count, image_path
-			FROM products
-			WHERE is_active = 1`
+				p.id,
+				p.name, 
+				price, 
+				quantity, 
+				like_count, 
+				dislike_count, 
+				GROUP_CONCAT(CONCAT(c.id, ':', c.name) SEPARATOR ', ') as categories,
+				image_path
+			FROM 
+				products AS p
+			INNER JOIN
+				product_categories AS pc ON pc.product_id = p.id
+			INNER JOIN
+				categories AS c ON pc.category_id = c.id
+			WHERE 
+				p.is_active = 1
+			GROUP BY
+				p.id`
 		);
 		if (!queryResults)
 			return {
 				success: false,
 				message: "No products found!",
 			};
-		queryResults.forEach((each) => {
-			each.image_path = path.join(
-				process.env.SERVER_URL,
-				`${UPLOADS_BASE_PATH}/products`,
-				each.image_path
-			);
-		});
+		queryResults = serverProductImagePaths(queryResults)
+
 		return {
 			success: true,
 			message: `Found: ${queryResults.length} products`,
@@ -155,7 +166,11 @@ async function getProductsForCustomer() {
 		};
 	} catch (error) {
 		console.log(error);
-		return;
+		return {
+			success: true,
+			message: "Get products failed!",
+			error: error.message,
+		};
 	}
 }
 
