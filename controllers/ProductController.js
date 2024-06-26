@@ -21,6 +21,10 @@ exports.addProduct = async (req, res) => {
 			category_ids = category_ids[0].split(",");
 		}
 
+		if (typeof category_ids === "string") {
+			category_ids = category_ids.split(",");
+		}
+
 		// * Validate the data of the product to be inserted
 		const validateResult = validateNewProductInputs(
 			name,
@@ -65,7 +69,7 @@ exports.getProducts = async (req, res) => {
 		if (req.role === CUSTOMER_ROLE) {
 			const productQueryResult = await getProductsForCustomer();
 			if (!productQueryResult.success) {
-            const statusCode = (productQueryResult.error) ? 500 : 404
+				const statusCode = (productQueryResult.error) ? 500 : 404;
 				return res.status(statusCode).json(productQueryResult);
 			}
 			return res.status(200).json(productQueryResult);
