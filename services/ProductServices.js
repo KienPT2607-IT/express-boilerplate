@@ -171,9 +171,13 @@ async function getProductsForCustomer(
 	}
 }
 
-/**The SQL query below says "return only 10 records, start on record 16 (OFFSET 15)":order
- * @param {number} offset - Where the records start be return
- * @returns The product data retrieved from DB and total products, pages will have
+/**
+ * This function retrieves products from DB
+ * @param {number} page - THis is the current page number to get data
+ * @param {number} limit - The maximum number of products shown in each page
+ * @param {string} sortBy - The column name to be sorted
+ * @param {string} sortOrder - The sort order 
+ * @returns The list of products and along with additional information
  */
 async function getProductsForCustomerNoFilter(
 	limit,
@@ -235,6 +239,15 @@ async function getProductsForCustomerNoFilter(
 	}
 }
 
+/**
+ * This function retrieves products from DB
+ * @param {number} page - THis is the current page number to get data
+ * @param {number} limit - The maximum number of products shown in each page
+ * @param {string} sortBy - The column name to be sorted
+ * @param {string} sortOrder - The sort order 
+ * @param {number | string} categoryId - The id of category which is filtered
+ * @returns The list of products and along with additional information
+ */
 async function getProductsForCustomerWithFilter(
 	limit,
 	sortBy,
