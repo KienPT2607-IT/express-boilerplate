@@ -91,7 +91,7 @@ exports.login = async (req, res) => {
 			message: "Account does not exist!"
 		})
 
-		const isPassMatched = isPasswordMatched(password, customerAccount.password)
+		const isPassMatched = await isPasswordMatched(password, customerAccount.password)
 		if (!isPassMatched) return res.status(400).json({
 			success: false,
 			message: "Invalid password!",
