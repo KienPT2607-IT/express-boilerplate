@@ -83,12 +83,14 @@ async function getAllActiveCategories() {
 async function checkCategoryExists(id) {
    try {
       const [result] = await connection.query(
-         "SELECT id FROM categories WHERE id = ? LIMIT 1",
+         `SELECT id FROM categories 
+         WHERE id = ? AND is_active = 1
+         LIMIT 1`,
          [id]
       )
-      if (!result) return {
+      if (result.length === 0) return {
          success: false,
-         message: "Category not exists"
+         message: "Category not exists or is disabled!"
       }
       return { success: true }
    } catch (error) {
