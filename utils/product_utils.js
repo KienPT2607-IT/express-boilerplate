@@ -1,4 +1,4 @@
-const numberRegex = /^\d+$/
+const numberRegex = /^\d+$/;
 /**
  * This function checks for product's name validation
  * The name length must be in range of 10 to 100 characters
@@ -6,13 +6,13 @@ const numberRegex = /^\d+$/
  * @returns If the product name is valid
  */
 function checkNameValid(name) {
-   if (!name) return false
-   if (typeof name !== "string") return false
+   if (!name) return false;
+   if (typeof name !== "string") return false;
    if (
       name.length < 10
       || name.length > 100
-   ) return false
-   return true
+   ) return false;
+   return true;
 }
 
 /**
@@ -24,13 +24,13 @@ function checkNameValid(name) {
  * @returns If the product price id valid
  */
 function checkPriceValid(price) {
-   if (!price.trim()) return false
+   if (!price.trim()) return false;
    // Check if the number is float
    if (price.includes(".")) {
       // Check for float with maximum of 2 digits after the decimal point and total length of 8
       const floatRegex = /^\d{1,8}\.\d{1,2}$/;
-      if (floatRegex.test(price)) return true
-      return false
+      if (floatRegex.test(price)) return true;
+      return false;
    }
    // Check for integer with maximum length of 8
    const intRegex = /^\d{1,8}$/;
@@ -44,12 +44,12 @@ function checkPriceValid(price) {
  * @returns If the quantity is valid
  */
 function checkQuantityValid(quantity) {
-   if (!numberRegex.test(quantity)) return false
+   if (!numberRegex.test(quantity)) return false;
 
-   quantity = parseInt(quantity, 10)
-   if (quantity < 0) return false
-   if (quantity % 1 != 0) return false
-   return true
+   quantity = parseInt(quantity, 10);
+   if (quantity < 0) return false;
+   if (quantity % 1 != 0) return false;
+   return true;
 }
 
 /**
@@ -60,31 +60,52 @@ function checkQuantityValid(quantity) {
  */
 function checkDesValid(description) {
    if (typeof description === "undefined")
-      return true
+      return true;
    if (typeof description !== "string")
-      return false
+      return false;
    if (!description.trim())
-      return false
-   return true
+      return false;
+   return true;
 }
 
 /**
- * This function checks validation for all the ids of categories
+ * This function checks validation for all the ids of categories 
  * that are going to be marked with product  
  * @param {Array<string>} category_ids - An array of category ids
  * @returns If all the category ids are valid
  */
 function checkCategoryIdsValid(category_ids) {
-   if (!category_ids) return false
+   if (!category_ids) return false;
    category_ids.forEach(each => {
-      if (!numberRegex.test(each)) return false
-      each = parseInt(each, 10)
-      if (each <= 0) return false
-      if (each % 1 != 0) return false
-   })
-   const categoryIdsSet = new Set(category_ids)
-   if (categoryIdsSet.size != category_ids.length) return false
-   return true
+      if (!numberRegex.test(each)) return false;
+      each = parseInt(each, 10);
+      if (each <= 0) return false;
+      if (each % 1 != 0) return false;
+   });
+   const categoryIdsSet = new Set(category_ids);
+   if (categoryIdsSet.size != category_ids.length) return false;
+   return true;
+}
+
+/**
+ * This function transforms all the categories of products from string
+ * into the array of category object which hold id-name pairs of categories
+ * @param {Array<object>} products - list of products retrieved from DB
+ */
+function processCategories(products) {
+   products.forEach(each => {
+      each.price = parseFloat(each.price);
+      if (!each.categories.includes(",")) {
+         const [id, name] = each.categories.split(":");
+         each.categories = [{ id, name }];
+      } else {
+         each.categories = each.categories.split(",").map(category => {
+            const [id, name] = category.split(":");
+            return { id, name };
+         });
+      }
+   });
+   return products;
 }
 
 module.exports = {
@@ -92,5 +113,6 @@ module.exports = {
    checkDesValid,
    checkPriceValid,
    checkQuantityValid,
-   checkCategoryIdsValid
-}
+   checkCategoryIdsValid,
+   processCategories
+};

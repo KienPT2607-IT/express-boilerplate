@@ -54,7 +54,6 @@ exports.addProduct = async (req, res) => {
 		}
 		return res.status(201).json(addNewProductResult);
 	} catch (error) {
-		console.error("Error executing query:", error);
 		removeUploadFile(req.file.filename, "products");
 		res.status(500).json({
 			success: false,
@@ -67,7 +66,13 @@ exports.addProduct = async (req, res) => {
 exports.getProducts = async (req, res) => {
 	try {
 		if (req.role === CUSTOMER_ROLE) {
-			const productQueryResult = await getProductsForCustomer();
+			const productQueryResult = await getProductsForCustomer(
+				parseInt(req.query.page, 10),
+				parseInt(req.query.limit, 10),
+				req.query.sortBy,
+				req.query.sortOrder,
+				req.query.categoryId
+			);
 			if (!productQueryResult.success) {
 				const statusCode = (productQueryResult.error) ? 500 : 404;
 				return res.status(statusCode).json(productQueryResult);
