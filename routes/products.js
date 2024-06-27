@@ -172,6 +172,9 @@ router.post(
  *                 message:
  *                   type: string
  *                   example: Product added
+ *                 total_products:
+ *                   type: integer
+ *                   example: 10
  *                 data:
  *                   type: array
  *                   items:
@@ -212,8 +215,21 @@ router.post(
  *                       image_path:
  *                         type: string
  *                         example: http:/localhost:3000/products/71guL0VnKiL._AC_SL1024_.jpg
+ *       400:
+ *         description: Client error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Error message!
  *       404:
- *         description: No product found in DB
+ *         description: No products found in DB
  *         content:
  *           application/json:
  *             schema:
@@ -249,6 +265,119 @@ router.get(
    productController.getListProductsForCustomer
 );
 
+/**
+ * @swagger
+ * /products/{id}:
+ *   get:
+ *     summary: Retrieve the products
+ *     tags: [Products]
+ *     description: Retrieve the products for viewing
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: auth_token
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Token for authentication
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The product id to view detail
+ *     responses:
+ *       200:
+ *         description: The list of products found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       name:
+ *                         type: string
+ *                         example: Lego Ninja Go
+ *                       price:
+ *                         type: double
+ *                         example: 145.8
+ *                       quantity:
+ *                         type: integer
+ *                         example: 134
+ *                       description:
+ *                         type: string
+ *                         example: This is the description
+ *                       like_count:
+ *                         type: integer
+ *                         example: 1
+ *                       image_path:
+ *                         type: string
+ *                         example: http:/localhost:3000/products/71guL0VnKiL._AC_SL1024_.jpg
+ *                       categories:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                               example: 1
+ *                             name:
+ *                               type: string
+ *                               example: Ninja-Go ss1
+ *       400:
+ *         description: Client error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Error message!
+ *       404:
+ *         description: No such product found in DB
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Product not found!
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Server error!
+ *                 error:
+ *                   type: string
+ *                   example: The error message
+ */
 router.get(
    "/:id",
    authenticateToken,
