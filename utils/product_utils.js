@@ -1,11 +1,11 @@
-const numberRegex = /^\d+$/;
+const unsignedNumberRegex = /^\d+$/;
 /**
  * This function checks for product's name validation
  * The name length must be in range of 10 to 100 characters
  * @param {string} name - name of the product
  * @returns If the product name is valid
  */
-function checkNameValid(name) {
+function isNameValid(name) {
    if (!name) return false;
    if (typeof name !== "string") return false;
    if (
@@ -23,7 +23,7 @@ function checkNameValid(name) {
  * @param {string} price 
  * @returns If the product price id valid
  */
-function checkPriceValid(price) {
+function isPriceValid(price) {
    if (!price.trim()) return false;
    // Check if the number is float
    if (price.includes(".")) {
@@ -43,8 +43,8 @@ function checkPriceValid(price) {
  * @param {number} quantity - The quantity of the product
  * @returns If the quantity is valid
  */
-function checkQuantityValid(quantity) {
-   if (!numberRegex.test(quantity)) return false;
+function isQuantityValid(quantity) {
+   if (!unsignedNumberRegex.test(quantity)) return false;
 
    quantity = parseInt(quantity, 10);
    if (quantity < 0) return false;
@@ -58,7 +58,7 @@ function checkQuantityValid(quantity) {
  * @param {string | undefined} description 
  * @returns If the product description is valid
  */
-function checkDesValid(description) {
+function isDesValid(description) {
    if (typeof description === "undefined")
       return true;
    if (typeof description !== "string")
@@ -74,10 +74,10 @@ function checkDesValid(description) {
  * @param {Array<string>} category_ids - An array of category ids
  * @returns If all the category ids are valid
  */
-function checkCategoryIdsValid(category_ids) {
+function isCategoryIdsValid(category_ids) {
    if (!category_ids) return false;
    category_ids.forEach(each => {
-      if (!numberRegex.test(each)) return false;
+      if (!unsignedNumberRegex.test(each)) return false;
       each = parseInt(each, 10);
       if (each <= 0) return false;
       if (each % 1 != 0) return false;
@@ -108,11 +108,76 @@ function processCategories(products) {
    return products;
 }
 
+/**
+ * This function checks if the page number in the request query parameter is valid for doing pagination
+ * @param {string | undefined} page - This is the page number to be checked for validity
+ * @returns If the page number is valid
+ */
+function isPageNumberValid(page) {
+   page = parseInt(page, 10);
+   if (page === NaN) return false
+   if (page <= 0) return false
+   return true
+}
+
+/**
+ * This function checks if the limit number of products in the request query parameter is valid for pagination
+ * @param {string} limit - This is the limitation of product quantity list to be checked for validity
+ * @returns If the limit number is valid
+ */
+function isProductLimitNumberValid(limit) {
+   limit = parseInt(limit, 10);
+   if (limit === NaN) return false
+   if (limit <= 0) return false
+   return true
+}
+
+/**
+ * This function checks if the product sort option is valid
+ * @param {string | undefined} sortBy - The product sort option
+ * @returns If the product sort option is valid
+ */
+function isSortOptionValid(sortBy) {
+   if (typeof sortBy === "undefined") return false
+   return true 
+}
+
+/**
+ * This function checks if the product sort order is valid
+ * @param {string | undefined} sortOrder - The product sort order
+ * @returns If the product sort order is valid
+ */
+function isSortOrderValid(sortOrder) {
+   if (typeof sortOrder === "undefined"
+      || (sortOrder.toUpperCase() !== "DESC"
+         && sortOrder.toUpperCase() !== "ASC")
+   ) return false
+   return true
+}
+
+/**
+ * This function checks if the product id is valid
+ * @param {string} id - The id of product to get detail
+ * @returns If the id is valid
+ */
+function isIdValid(id) {
+   if (typeof id === "string") {
+      if (unsignedNumberRegex.test(id)) return true;
+      return false;
+   }
+   return false;
+}
+
 module.exports = {
-   checkNameValid,
-   checkDesValid,
-   checkPriceValid,
-   checkQuantityValid,
-   checkCategoryIdsValid,
-   processCategories
+   isNameValid,
+   isDesValid,
+   isPriceValid,
+   isQuantityValid,
+   isCategoryIdsValid,
+   isPageNumberValid,
+   isProductLimitNumberValid,
+   isSortOptionValid,
+   isSortOrderValid,
+   processCategories,
+   isIdValid,
 };

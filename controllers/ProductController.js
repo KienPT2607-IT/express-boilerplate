@@ -3,9 +3,11 @@ const {
 	validateNewProductInputs,
 	addNewProduct,
 	getProductsForCustomer,
+	validateGetProductQueryParams,
+	checkIdValid,
+	getProductDetail,
 } = require("../services/ProductServices");
 const { removeUploadFile } = require("../utils/file_utils");
-const { CUSTOMER_ROLE } = require("../utils/constants");
 
 exports.addProduct = async (req, res) => {
 	const { name, price, quantity, description } = req.body;
@@ -26,16 +28,16 @@ exports.addProduct = async (req, res) => {
 		}
 
 		// * Validate the data of the product to be inserted
-		const validateResult = validateNewProductInputs(
+		const validationResult = validateNewProductInputs(
 			name,
 			price,
 			quantity,
 			category_ids,
 			description
 		);
-		if (!validateResult.success) {
+		if (!validationResult.success) {
 			removeUploadFile(req.file.filename, "products");
-			return res.status(400).json(validateResult);
+			return res.status(400).json(validationResult);
 		}
 		// * Insert the product into db
 		const addNewProductResult = await addNewProduct(
@@ -63,26 +65,28 @@ exports.addProduct = async (req, res) => {
 	}
 };
 
-exports.getProducts = async (req, res) => {
+exports.getListProductsForCustomer = async (req, res) => {
+	const { page, limit, sortBy, sortOrder, categoryId } = req.query;
 	try {
-		if (req.role === CUSTOMER_ROLE) {
-			const productQueryResult = await getProductsForCustomer(
-				parseInt(req.query.page, 10),
-				parseInt(req.query.limit, 10),
-				req.query.sortBy,
-				req.query.sortOrder,
-				req.query.categoryId
-			);
-			if (!productQueryResult.success) {
-				const statusCode = (productQueryResult.error) ? 500 : 404;
-				return res.status(statusCode).json(productQueryResult);
-			}
-			return res.status(200).json(productQueryResult);
+		// * Check if all the query parameters are valid before start querying
+		const validationResult = validateGetProductQueryParams(
+			page, limit, sortBy, sortOrder, categoryId
+		);
+		if (!validationResult.success)
+			return res.status(400).json(validationResult);
+
+		const productQueryResult = await getProductsForCustomer(
+			parseInt(page, 10),
+			parseInt(limit, 10),
+			sortBy,
+			sortOrder,
+			categoryId
+		);
+		if (!productQueryResult.success) {
+			const statusCode = (productQueryResult.error) ? 500 : 404;
+			return res.status(statusCode).json(productQueryResult);
 		}
-		return res.status(404).json({
-			success: false,
-			message: "Cannot get products",
-		});
+		return res.status(200).json(productQueryResult);
 	} catch (error) {
 		return res.status(500).json({
 			success: false,
@@ -91,3 +95,24 @@ exports.getProducts = async (req, res) => {
 		});
 	}
 };
+
+exports.getProductDetail = async (req, res) => {
+	try {
+		const validationResult = checkIdValid(req.params.id)
+		if (!validationResult.success) 
+			return res.status(400).json(validationResult)
+
+		const queryResult = await getProductDetail(req.params.id)
+		if (!queryResult.success){
+			const statusCode = (queryResult.error) ? 500 : 404
+			return res.status(statusCode).json(queryResult)
+		}
+		return res.status(200).json(queryResult)
+	} catch (error) {
+		return res.status(500).json({
+			success: false,
+			message: "Server error!",
+			error: error.message,
+		});
+	}
+}

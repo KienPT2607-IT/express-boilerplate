@@ -1,17 +1,21 @@
 require("dotenv").config();
-const path = require("path");
 
 const connection = require("../services/DBServices");
 const { checkCategoryExists } = require("../services/CategoryServices");
 const {
-	checkNameValid,
-	checkPriceValid,
-	checkQuantityValid,
-	checkDesValid,
-	checkCategoryIdsValid,
+	isNameValid,
+	isPriceValid,
+	isQuantityValid,
+	isDesValid,
+	isCategoryIdsValid,
+	isPageNumberValid,
+	isProductLimitNumberValid,
+	isSortOptionValid,
+	isSortOrderValid,
 	processCategories,
+	isIdValid,
 } = require("../utils/product_utils");
-const { UPLOADS_BASE_PATH } = require("../utils/constants");
+const { checkIdValid: checkCategoryIdValid } = require("../services/CategoryServices");
 const { serverProductImagePaths } = require("../utils/file_utils");
 
 /**
@@ -32,27 +36,27 @@ function validateNewProductInputs(
 	category_ids,
 	description
 ) {
-	if (!checkNameValid(name))
+	if (!isNameValid(name))
 		return {
 			success: false,
 			message: "Invalid product name!",
 		};
-	if (!checkPriceValid(price))
+	if (!isPriceValid(price))
 		return {
 			success: false,
 			message: "Invalid product price!",
 		};
-	if (!checkQuantityValid(quantity))
+	if (!isQuantityValid(quantity))
 		return {
 			success: false,
 			message: "Invalid product quantity!",
 		};
-	if (!checkDesValid(description))
+	if (!isDesValid(description))
 		return {
 			success: false,
 			message: "Invalid product description!",
 		};
-	if (!checkCategoryIdsValid(category_ids))
+	if (!isCategoryIdsValid(category_ids))
 		return {
 			success: false,
 			message: "Invalid product category ids!",
@@ -133,7 +137,7 @@ async function addNewProduct(
 
 /**
  * This function retrieves products from DB and return to customer 
- * @param {number} page - THis is the current page number to get data
+ * @param {number} page - This is the current page number to get data
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order 
@@ -141,7 +145,7 @@ async function addNewProduct(
  * @returns The list of products and along with additional information
  */
 async function getProductsForCustomer(
-	page = 0,
+	page = 1,
 	limit = 15,
 	sortBy,
 	sortOrder,
@@ -173,7 +177,7 @@ async function getProductsForCustomer(
 
 /**
  * This function retrieves products from DB
- * @param {number} page - THis is the current page number to get data
+ * @param {number} page - This is the current page number to get data
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order 
@@ -209,8 +213,7 @@ async function getProductsForCustomerNoFilter(
 		if (!queryResults) return {
 			success: false,
 			message: "No products found!",
-			totalItems: 0,
-			totalPages: 0
+			total_products: 0
 		};
 
 		const [countResults] = await connection.query(
@@ -218,21 +221,19 @@ async function getProductsForCustomerNoFilter(
 			FROM products
 			WHERE is_active = 1`
 		);
-		const totalItems = countResults[0].count;
-		const totalPages = Math.ceil(totalItems / limit);
+		const totalProducts = countResults[0].count;
 
 		queryResults = serverProductImagePaths(queryResults);
 		queryResults = processCategories(queryResults);
 		return {
 			success: true,
 			message: `Found: ${queryResults.length} products`,
-			total_items: totalItems,
-			total_pages: totalPages,
+			total_products: totalProducts,
 			data: queryResults,
 		};
 	} catch (error) {
 		return {
-			success: true,
+			success: false,
 			message: "Get products failed!",
 			error: error.message,
 		};
@@ -241,7 +242,7 @@ async function getProductsForCustomerNoFilter(
 
 /**
  * This function retrieves products from DB
- * @param {number} page - THis is the current page number to get data
+ * @param {number} page - This is the current page number to get data
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order 
@@ -282,8 +283,7 @@ async function getProductsForCustomerWithFilter(
 		if (queryResults.length === 0) return {
 			success: false,
 			message: "No products found!",
-			totalItems: 0,
-			totalPages: 0
+			total_products: 0
 		};
 
 		const [countResults] = await connection.query(
@@ -293,21 +293,113 @@ async function getProductsForCustomerWithFilter(
 			WHERE p.is_active = 1 AND pc.category_id = ?`,
 			[categoryId]
 		);
-		const totalItems = countResults[0].count;
-		const totalPages = Math.ceil(totalItems / limit);
+		const totalProducts = countResults[0].count;
 
 		queryResults = serverProductImagePaths(queryResults);
 		queryResults = processCategories(queryResults);
 		return {
 			success: true,
 			message: `Found: ${queryResults.length} products`,
-			total_items: totalItems,
-			total_pages: totalPages,
+			total_items: totalProducts,
 			data: queryResults,
 		};
 	} catch (error) {
 		return {
+			success: false,
+			message: "Get products failed!",
+			error: error.message,
+		};
+	}
+}
+
+/**
+ * 
+ * @param {string} page - This is the current page number to get data
+ * @param {string} limit 
+ * @param {string | undefined} sortBy 
+ * @param {string | undefined} sortOrder 
+ * @param {string | undefined} categoryId 
+ */
+function validateGetProductQueryParams(page, limit, sortBy, sortOrder, categoryId) {
+	if (!isPageNumberValid(page)) return {
+		success: false,
+		message: "Invalid page number!"
+	};
+	if (!isProductLimitNumberValid(limit)) return {
+		success: false,
+		message: "Invalid product limit number!"
+	};
+	if (!isSortOptionValid(sortBy)) return {
+		success: false,
+		message: "Invalid sort option!"
+	};
+	if (!isSortOrderValid(sortOrder)) return {
+		success: false,
+		message: "Invalid sort order!"
+	};
+	if (typeof categoryId !== "undefined"
+		&& categoryId.trim().length != 0)
+		if (!checkCategoryIdValid(categoryId)) return {
+			success: false,
+			message: "Invalid category id"
+		};
+
+	return { success: true };
+}
+
+/**
+ * This function checks if the product id is valid
+ * @param {string} id - The id of product to get detail
+ * @returns If the id is valid along with the message if invalid
+ */
+function checkIdValid(id) {
+	if (!isIdValid(id)) return {
+		success: false,
+		message: "Invalid product id!"
+	};
+	return { success: true };
+}
+
+/**
+ * This function gets detail of a specified product
+ * @param {string} id - The id of product to get detail
+ * @returns The data of product with provided id or error if any
+ */
+async function getProductDetail(id) {
+	try {
+		let [queryResult] = await connection.query(
+			`SELECT 
+				p.id, 
+				p.name, 
+				price, 
+				quantity,
+				like_count,
+				dislike_count,
+				p.description, 
+				image_path, 
+				p.create_at,
+				GROUP_CONCAT(c.id, ':', c.name) AS categories
+			FROM products AS p
+			INNER JOIN product_categories AS pc ON pc.product_id = p.id
+			INNER JOIN categories AS c ON pc.category_id = c.id
+			WHERE p.is_active = 1 AND p.id = ? AND c.is_active = 1
+			GROUP BY p.id`,
+			[id]
+		);
+		if (queryResult.length == 0) return {
+			success: false,
+			message: "Product not found!"
+		};
+		queryResult = serverProductImagePaths(queryResult);
+		queryResult = processCategories(queryResult);
+		return {
 			success: true,
+			data: queryResult
+		};
+	} catch (error) {
+		console.log(error);
+		return {
+			success: false,
 			message: "Get products failed!",
 			error: error.message,
 		};
@@ -317,4 +409,7 @@ module.exports = {
 	validateNewProductInputs,
 	addNewProduct,
 	getProductsForCustomer,
+	validateGetProductQueryParams,
+	checkIdValid,
+	getProductDetail,
 };
