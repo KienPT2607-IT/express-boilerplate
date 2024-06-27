@@ -24,11 +24,7 @@ async function removeUploadFile(filePath, dirPath) {
  */
 function serverProductImagePaths(products) {
    products.forEach(each => {
-      each.image_path = path.join(
-         process.env.SERVER_URL,
-         `/products`,
-         each.image_path
-      );
+      each.image_path = `${process.env.SERVER_URL}/products/${each.image_path}`;
    });
    return products;
 }
