@@ -1,3 +1,4 @@
+require("dotenv").config()
 const fs = require("fs");
 const path = require("path");
 const util = require("util");
@@ -24,6 +25,7 @@ async function removeUploadFile(filePath, dirPath) {
 function serverProductImagePaths(products) {
    products.forEach(each => {
       each.image_path = path.join(
+         process.env.SERVER_URL,
          `/products`,
          each.image_path
       );
