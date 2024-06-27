@@ -108,11 +108,80 @@ function processCategories(products) {
    return products;
 }
 
+/**
+ * This function checks if the page number in the request query parameter is valid for doing pagination
+ * @param {string | undefined} page - This is the page number to be checked for validity
+ * @returns If the page number is valid along with the message if has error
+ */
+function checkPageNumberValid(page) {
+   page = parseInt(page, 10);
+   if (page === NaN) return {
+      success: false,
+      message: "Page number is not a number, given NaN!"
+   };
+   if (page <= 0) return {
+      success: false,
+      message: `Page number cannot be less than 1, given ${page}!`
+   };
+   return { success: true };
+}
+
+/**
+ * This function checks if the limit number of products in the request query parameter is valid for pagination
+ * @param {string} limit - This is the limitation of product quantity list to be checked for validity
+ * @returns If the limit number is valid along with the message if has error
+ */
+function checkProductLimitNumberValid(limit) {
+   limit = parseInt(limit, 10);
+   if (limit === NaN) return {
+      success: false,
+      message: `Product limit quantity is not a number, given NaN!`
+   };
+   if (limit <= 0) return {
+      success: false,
+      message: `Product limit quantity cannot be less than 1, given ${limit}`
+   };
+   return { success: true };
+}
+
+/**
+ * This function checks if the product sort option is valid
+ * @param {string | undefined} sortBy - The product sort option
+ * @returns If the product sort option is valid along with the message if has error
+ */
+function checkSortOptionValid(sortBy) {
+   if (typeof sortBy === "undefined") return {
+      success: false,
+      message: `Sort option is invalid, given ${sortBy}!`
+   };
+   return { success: true };
+}
+
+/**
+ * This function checks if the product sort order is valid
+ * @param {string | undefined} sortOrder - The product sort order
+ * @returns If the product sort order is valid along with the message if has error
+ */
+function checkSortOrderValid(sortOrder) {
+   if (typeof sortOrder === "undefined"
+      || (sortOrder.toUpperCase() !== "DESC"
+         && sortOrder.toUpperCase() !== "ASC")
+   ) return {
+      success: false,
+      message: `Sort order is invalid, given ${sortOrder}!`
+   };
+   return { success: true };
+}
+
 module.exports = {
    checkNameValid,
    checkDesValid,
    checkPriceValid,
    checkQuantityValid,
    checkCategoryIdsValid,
-   processCategories
+   processCategories,
+   checkPageNumberValid,
+   checkProductLimitNumberValid,
+   checkSortOptionValid,
+   checkSortOrderValid,
 };

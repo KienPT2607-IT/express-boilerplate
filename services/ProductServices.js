@@ -10,9 +10,15 @@ const {
 	checkDesValid,
 	checkCategoryIdsValid,
 	processCategories,
+	checkPageNumberValid,
+	checkProductLimitNumberValid,
+	checkSortOptionValid,
+	checkSortOrderValid,
 } = require("../utils/product_utils");
+const { checkIdValid } = require("../services/CategoryServices");
 const { UPLOADS_BASE_PATH } = require("../utils/constants");
 const { serverProductImagePaths } = require("../utils/file_utils");
+const { type } = require("os");
 
 /**
  * The function checks for the validation of the product details
@@ -133,7 +139,7 @@ async function addNewProduct(
 
 /**
  * This function retrieves products from DB and return to customer 
- * @param {number} page - THis is the current page number to get data
+ * @param {number} page - This is the current page number to get data
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order 
@@ -141,7 +147,7 @@ async function addNewProduct(
  * @returns The list of products and along with additional information
  */
 async function getProductsForCustomer(
-	page = 0,
+	page = 1,
 	limit = 15,
 	sortBy,
 	sortOrder,
@@ -173,7 +179,7 @@ async function getProductsForCustomer(
 
 /**
  * This function retrieves products from DB
- * @param {number} page - THis is the current page number to get data
+ * @param {number} page - This is the current page number to get data
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order 
@@ -241,7 +247,7 @@ async function getProductsForCustomerNoFilter(
 
 /**
  * This function retrieves products from DB
- * @param {number} page - THis is the current page number to get data
+ * @param {number} page - This is the current page number to get data
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order 
@@ -313,8 +319,42 @@ async function getProductsForCustomerWithFilter(
 		};
 	}
 }
+
+/**
+ * 
+ * @param {string} page - This is the current page number to get data
+ * @param {string} limit 
+ * @param {string | undefined} sortBy 
+ * @param {string | undefined} sortOrder 
+ * @param {string | undefined} categoryId 
+ */
+function validateGetProductQueryParams(page, limit, sortBy, sortOrder, categoryId) {
+	let validationResult = checkPageNumberValid(page);
+	if (!validationResult.success)
+		return validationResult;
+
+	validationResult = checkProductLimitNumberValid(limit);
+	if (!validationResult.success)
+		return validationResult;
+
+	validationResult = checkSortOptionValid(sortBy);
+	if (!validationResult.success)
+		return validationResult;
+
+	validationResult = checkSortOrderValid(sortOrder);
+	if (!validationResult.success)
+		return validationResult;
+
+	if (typeof categoryId !== "undefined" && categoryId.trim().length != 0) {
+		validationResult = checkIdValid(categoryId);
+		if (!validationResult.success)
+			return validationResult;
+	}
+	return { success: true };
+}
 module.exports = {
 	validateNewProductInputs,
 	addNewProduct,
 	getProductsForCustomer,
+	validateGetProductQueryParams,
 };
