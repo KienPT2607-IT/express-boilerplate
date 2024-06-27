@@ -173,6 +173,20 @@ function checkSortOrderValid(sortOrder) {
    return { success: true };
 }
 
+/**
+ * This function checks if the product id is valid
+ * @param {string} id - The id of product to get detail
+ * @returns If the id is valid
+ */
+function isIdValid(id) {
+   if (typeof id === "string") {
+      const intRegex = /^\d+$/;
+      if (intRegex.test(id)) return true;
+      return false;
+   }
+   return false;
+}
+
 module.exports = {
    checkNameValid,
    checkDesValid,
@@ -184,4 +198,5 @@ module.exports = {
    checkProductLimitNumberValid,
    checkSortOptionValid,
    checkSortOrderValid,
+   isIdValid,
 };

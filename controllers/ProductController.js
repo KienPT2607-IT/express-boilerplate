@@ -4,9 +4,12 @@ const {
 	addNewProduct,
 	getProductsForCustomer,
 	validateGetProductQueryParams,
+	checkIdValid,
+	getProductDetail,
 } = require("../services/ProductServices");
 const { removeUploadFile } = require("../utils/file_utils");
 const { CUSTOMER_ROLE } = require("../utils/constants");
+const { response } = require("express");
 
 exports.addProduct = async (req, res) => {
 	const { name, price, quantity, description } = req.body;
@@ -94,3 +97,24 @@ exports.getListProductsForCustomer = async (req, res) => {
 		});
 	}
 };
+
+exports.getProductDetail = async (req, res) => {
+	try {
+		const validationResult = checkIdValid(req.params.id)
+		if (!validationResult.success) 
+			return res.status(400).json(validationResult)
+
+		const queryResult = await getProductDetail(req.params.id)
+		if (!queryResult.success){
+			const statusCode = (queryResult.error) ? 500 : 404
+			return res.status(statusCode).json(queryResult)
+		}
+		return res.status(200).json(queryResult)
+	} catch (error) {
+		return res.status(500).json({
+			success: false,
+			message: "Server error!",
+			error: error.message,
+		});
+	}
+}

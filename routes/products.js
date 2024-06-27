@@ -249,4 +249,11 @@ router.get(
    productController.getListProductsForCustomer
 );
 
+router.get(
+   "/:id",
+   authenticateToken,
+   isAuth([CUSTOMER_ROLE]),
+   productController.getProductDetail
+);
+
 module.exports = router;

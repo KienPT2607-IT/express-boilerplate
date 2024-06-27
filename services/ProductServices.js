@@ -9,13 +9,14 @@ const {
 	checkQuantityValid,
 	checkDesValid,
 	checkCategoryIdsValid,
-	processCategories,
 	checkPageNumberValid,
 	checkProductLimitNumberValid,
 	checkSortOptionValid,
 	checkSortOrderValid,
+	processCategories,
+	isIdValid,
 } = require("../utils/product_utils");
-const { checkIdValid } = require("../services/CategoryServices");
+const { checkIdValid: checkCategoryIdValid } = require("../services/CategoryServices");
 const { UPLOADS_BASE_PATH } = require("../utils/constants");
 const { serverProductImagePaths } = require("../utils/file_utils");
 const { type } = require("os");
@@ -346,15 +347,76 @@ function validateGetProductQueryParams(page, limit, sortBy, sortOrder, categoryI
 		return validationResult;
 
 	if (typeof categoryId !== "undefined" && categoryId.trim().length != 0) {
-		validationResult = checkIdValid(categoryId);
+		validationResult = checkCategoryIdValid(categoryId);
 		if (!validationResult.success)
 			return validationResult;
 	}
 	return { success: true };
+}
+
+/**
+ * This function checks if the product id is valid
+ * @param {string} id - The id of product to get detail
+ * @returns If the id is valid along with the message if invalid
+ */
+function checkIdValid(id) {
+	if (!isIdValid(id)) return {
+		success: false,
+		message: "Invalid product id!"
+	};
+	return { success: true };
+}
+
+/**
+ * This function gets detail of a specified product
+ * @param {string} id - The id of product to get detail
+ * @returns The data of product with provided id or error if any
+ */
+async function getProductDetail(id) {
+	try {
+		let [queryResult] = await connection.query(
+			`SELECT 
+				p.id, 
+				p.name, 
+				price, 
+				quantity,
+				like_count,
+				dislike_count,
+				p.description, 
+				image_path, 
+				p.create_at,
+				GROUP_CONCAT(c.id, ':', c.name) AS categories
+			FROM products AS p
+			INNER JOIN product_categories AS pc ON pc.product_id = p.id
+			INNER JOIN categories AS c ON pc.category_id = c.id
+			WHERE p.is_active = 1 AND p.id = ? AND c.is_active = 1
+			GROUP BY p.id`,
+			[id]
+		);
+		if (queryResult.length == 0) return {
+			success: false,
+			message: "Product not found!"
+		};
+		queryResult = serverProductImagePaths(queryResult);
+		queryResult = processCategories(queryResult);
+		return {
+			success: true,
+			data: queryResult
+		}
+	} catch (error) {
+		console.log(error);
+		return {
+			success: false,
+			message: "Get products failed!",
+			error: error.message,
+		};
+	}
 }
 module.exports = {
 	validateNewProductInputs,
 	addNewProduct,
 	getProductsForCustomer,
 	validateGetProductQueryParams,
+	checkIdValid,
+	getProductDetail,
 };
