@@ -115,9 +115,9 @@ function processCategories(products) {
  */
 function isPageNumberValid(page) {
    page = parseInt(page, 10);
-   if (page === NaN) return false
-   if (page <= 0) return false
-   return true
+   if (page === NaN) return false;
+   if (page <= 0) return false;
+   return true;
 }
 
 /**
@@ -127,9 +127,9 @@ function isPageNumberValid(page) {
  */
 function isProductLimitNumberValid(limit) {
    limit = parseInt(limit, 10);
-   if (limit === NaN) return false
-   if (limit <= 0) return false
-   return true
+   if (limit === NaN) return false;
+   if (limit <= 0) return false;
+   return true;
 }
 
 /**
@@ -138,8 +138,8 @@ function isProductLimitNumberValid(limit) {
  * @returns If the product sort option is valid
  */
 function isSortOptionValid(sortBy) {
-   if (typeof sortBy === "undefined") return false
-   return true 
+   if (typeof sortBy === "undefined") return false;
+   return true;
 }
 
 /**
@@ -151,8 +151,8 @@ function isSortOrderValid(sortOrder) {
    if (typeof sortOrder === "undefined"
       || (sortOrder.toUpperCase() !== "DESC"
          && sortOrder.toUpperCase() !== "ASC")
-   ) return false
-   return true
+   ) return false;
+   return true;
 }
 
 /**
@@ -168,6 +168,17 @@ function isIdValid(id) {
    return false;
 }
 
+/**
+ * This function checks if the product search keywords are valid 
+ * @param {*} searchKeywords - The product search keywords
+ * @returns If the search keywords are valid
+ */
+function isSearchKeywordsValid(searchKeywords) {
+   if (typeof searchKeywords !== "string") return false;
+   if (searchKeywords.trim().length == 0) return false;
+   return true;
+}
+
 module.exports = {
    isNameValid,
    isDesValid,
@@ -180,4 +191,5 @@ module.exports = {
    isSortOrderValid,
    processCategories,
    isIdValid,
+   isSearchKeywordsValid
 };
