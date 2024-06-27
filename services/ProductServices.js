@@ -283,8 +283,7 @@ async function getProductsForCustomerWithFilter(
 		);
 		if (queryResults.length === 0) return {
 			success: false,
-			message: "No products found!",
-			total_products: 0
+			message: "No products found!"
 		};
 
 		const [countResults] = await connection.query(
@@ -301,7 +300,7 @@ async function getProductsForCustomerWithFilter(
 		return {
 			success: true,
 			message: `Found: ${queryResults.length} products`,
-			total_items: totalProducts,
+			total_products: totalProducts,
 			data: queryResults,
 		};
 	} catch (error) {
