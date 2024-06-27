@@ -1,25 +1,22 @@
 require("dotenv").config();
-const path = require("path");
 
 const connection = require("../services/DBServices");
 const { checkCategoryExists } = require("../services/CategoryServices");
 const {
-	checkNameValid,
-	checkPriceValid,
-	checkQuantityValid,
-	checkDesValid,
-	checkCategoryIdsValid,
-	checkPageNumberValid,
-	checkProductLimitNumberValid,
-	checkSortOptionValid,
-	checkSortOrderValid,
+	isNameValid,
+	isPriceValid,
+	isQuantityValid,
+	isDesValid,
+	isCategoryIdsValid,
+	isPageNumberValid,
+	isProductLimitNumberValid,
+	isSortOptionValid,
+	isSortOrderValid,
 	processCategories,
 	isIdValid,
 } = require("../utils/product_utils");
 const { checkIdValid: checkCategoryIdValid } = require("../services/CategoryServices");
-const { UPLOADS_BASE_PATH } = require("../utils/constants");
 const { serverProductImagePaths } = require("../utils/file_utils");
-const { type } = require("os");
 
 /**
  * The function checks for the validation of the product details
@@ -39,27 +36,27 @@ function validateNewProductInputs(
 	category_ids,
 	description
 ) {
-	if (!checkNameValid(name))
+	if (!isNameValid(name))
 		return {
 			success: false,
 			message: "Invalid product name!",
 		};
-	if (!checkPriceValid(price))
+	if (!isPriceValid(price))
 		return {
 			success: false,
 			message: "Invalid product price!",
 		};
-	if (!checkQuantityValid(quantity))
+	if (!isQuantityValid(quantity))
 		return {
 			success: false,
 			message: "Invalid product quantity!",
 		};
-	if (!checkDesValid(description))
+	if (!isDesValid(description))
 		return {
 			success: false,
 			message: "Invalid product description!",
 		};
-	if (!checkCategoryIdsValid(category_ids))
+	if (!isCategoryIdsValid(category_ids))
 		return {
 			success: false,
 			message: "Invalid product category ids!",
@@ -330,27 +327,29 @@ async function getProductsForCustomerWithFilter(
  * @param {string | undefined} categoryId 
  */
 function validateGetProductQueryParams(page, limit, sortBy, sortOrder, categoryId) {
-	let validationResult = checkPageNumberValid(page);
-	if (!validationResult.success)
-		return validationResult;
+	if (!isPageNumberValid(page)) return {
+		success: false,
+		message: "Invalid page number!"
+	};
+	if (!isProductLimitNumberValid(limit)) return {
+		success: false,
+		message: "Invalid product limit number!"
+	};
+	if (!isSortOptionValid(sortBy)) return {
+		success: false,
+		message: "Invalid sort option!"
+	};
+	if (!isSortOrderValid(sortOrder)) return {
+		success: false,
+		message: "Invalid sort order!"
+	};
+	if (typeof categoryId !== "undefined"
+		&& categoryId.trim().length != 0)
+		if (!checkCategoryIdValid(categoryId)) return {
+			success: false,
+			message: "Invalid category id"
+		};
 
-	validationResult = checkProductLimitNumberValid(limit);
-	if (!validationResult.success)
-		return validationResult;
-
-	validationResult = checkSortOptionValid(sortBy);
-	if (!validationResult.success)
-		return validationResult;
-
-	validationResult = checkSortOrderValid(sortOrder);
-	if (!validationResult.success)
-		return validationResult;
-
-	if (typeof categoryId !== "undefined" && categoryId.trim().length != 0) {
-		validationResult = checkCategoryIdValid(categoryId);
-		if (!validationResult.success)
-			return validationResult;
-	}
 	return { success: true };
 }
 
@@ -402,7 +401,7 @@ async function getProductDetail(id) {
 		return {
 			success: true,
 			data: queryResult
-		}
+		};
 	} catch (error) {
 		console.log(error);
 		return {

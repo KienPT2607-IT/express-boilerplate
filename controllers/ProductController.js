@@ -8,8 +8,6 @@ const {
 	getProductDetail,
 } = require("../services/ProductServices");
 const { removeUploadFile } = require("../utils/file_utils");
-const { CUSTOMER_ROLE } = require("../utils/constants");
-const { response } = require("express");
 
 exports.addProduct = async (req, res) => {
 	const { name, price, quantity, description } = req.body;
@@ -30,16 +28,16 @@ exports.addProduct = async (req, res) => {
 		}
 
 		// * Validate the data of the product to be inserted
-		const validateResult = validateNewProductInputs(
+		const validationResult = validateNewProductInputs(
 			name,
 			price,
 			quantity,
 			category_ids,
 			description
 		);
-		if (!validateResult.success) {
+		if (!validationResult.success) {
 			removeUploadFile(req.file.filename, "products");
-			return res.status(400).json(validateResult);
+			return res.status(400).json(validationResult);
 		}
 		// * Insert the product into db
 		const addNewProductResult = await addNewProduct(
@@ -71,11 +69,11 @@ exports.getListProductsForCustomer = async (req, res) => {
 	const { page, limit, sortBy, sortOrder, categoryId } = req.query;
 	try {
 		// * Check if all the query parameters are valid before start querying
-		const validateResult = validateGetProductQueryParams(
+		const validationResult = validateGetProductQueryParams(
 			page, limit, sortBy, sortOrder, categoryId
 		);
-		if (!validateResult.success)
-			return res.status(400).json(validateResult);
+		if (!validationResult.success)
+			return res.status(400).json(validationResult);
 
 		const productQueryResult = await getProductsForCustomer(
 			parseInt(page, 10),
