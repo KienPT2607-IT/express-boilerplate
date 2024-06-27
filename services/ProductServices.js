@@ -213,8 +213,7 @@ async function getProductsForCustomerNoFilter(
 		if (!queryResults) return {
 			success: false,
 			message: "No products found!",
-			totalItems: 0,
-			totalPages: 0
+			total_products: 0
 		};
 
 		const [countResults] = await connection.query(
@@ -222,21 +221,19 @@ async function getProductsForCustomerNoFilter(
 			FROM products
 			WHERE is_active = 1`
 		);
-		const totalItems = countResults[0].count;
-		const totalPages = Math.ceil(totalItems / limit);
+		const totalProducts = countResults[0].count;
 
 		queryResults = serverProductImagePaths(queryResults);
 		queryResults = processCategories(queryResults);
 		return {
 			success: true,
 			message: `Found: ${queryResults.length} products`,
-			total_items: totalItems,
-			total_pages: totalPages,
+			total_products: totalProducts,
 			data: queryResults,
 		};
 	} catch (error) {
 		return {
-			success: true,
+			success: false,
 			message: "Get products failed!",
 			error: error.message,
 		};
@@ -286,8 +283,7 @@ async function getProductsForCustomerWithFilter(
 		if (queryResults.length === 0) return {
 			success: false,
 			message: "No products found!",
-			totalItems: 0,
-			totalPages: 0
+			total_products: 0
 		};
 
 		const [countResults] = await connection.query(
@@ -297,21 +293,19 @@ async function getProductsForCustomerWithFilter(
 			WHERE p.is_active = 1 AND pc.category_id = ?`,
 			[categoryId]
 		);
-		const totalItems = countResults[0].count;
-		const totalPages = Math.ceil(totalItems / limit);
+		const totalProducts = countResults[0].count;
 
 		queryResults = serverProductImagePaths(queryResults);
 		queryResults = processCategories(queryResults);
 		return {
 			success: true,
 			message: `Found: ${queryResults.length} products`,
-			total_items: totalItems,
-			total_pages: totalPages,
+			total_items: totalProducts,
 			data: queryResults,
 		};
 	} catch (error) {
 		return {
-			success: true,
+			success: false,
 			message: "Get products failed!",
 			error: error.message,
 		};
