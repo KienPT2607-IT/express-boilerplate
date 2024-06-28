@@ -188,32 +188,9 @@ async function getProductsForCustomerNoFilter(
 	offset
 ) {
 	try {
-		let [queryResults] = await connection.query(
-			`SELECT 
-				p.id,
-				p.name, 
-				price, 
-				quantity, 
-				like_count, 
-				dislike_count, 
-				GROUP_CONCAT(CONCAT(c.id, ':', c.name) SEPARATOR ',') as categories,
-				image_path
-			FROM products AS p
-			INNER JOIN product_categories AS pc ON pc.product_id = p.id
-			INNER JOIN categories AS c ON pc.category_id = c.id
-			WHERE p.is_active = 1
-			GROUP BY p.id
-			ORDER BY p.${sortBy} ${sortOrder}
-			LIMIT ?
-			OFFSET ?`,
-			[limit, offset]
-		);
-		if (!queryResults) return {
-			success: false,
-			message: "No products found!",
-			total_products: 0
-		};
-
+		let queryProductResults = await getProductWithNoFilter(limit, sortBy, sortOrder, offset)
+		if (!queryProductResults.success) 
+			return queryProductResults
 		const [countResults] = await connection.query(
 			`SELECT COUNT(*) AS count 
 			FROM products
@@ -241,15 +218,64 @@ async function getProductsForCustomerNoFilter(
 			`,
 		);
 
-		queryResults = serverProductImagePaths(queryResults);
-		queryResults = processCategories(queryResults);
 		return {
 			success: true,
-			message: `Found: ${queryResults.length} products`,
+			message: `Found: ${queryProductResults.products.length} products`,
 			total_products: totalProducts,
-			products: queryResults,
+			products: queryProductResults.products,
 			categories: categoryQueryResults,
 		};
+	} catch (error) {
+		return {
+			success: false,
+			message: "Get products failed!",
+			error: error.message,
+		};
+	}
+}
+
+/**
+ * This function retrieves products from DB
+ * @param {number} limit - The maximum number of products shown in each page
+ * @param {string} sortBy - The column name to be sorted
+ * @param {string} sortOrder - The sort order 
+ * @param {number} offset - WHere the products start being retrieved
+ * @returns The list of products, and along with additional information
+ */
+async function getProductWithNoFilter(limit, sortBy, sortOrder, offset) {
+	try {
+		let [queryResults] = await connection.query(
+			`SELECT 
+				p.id,
+				p.name, 
+				price, 
+				quantity, 
+				like_count, 
+				dislike_count, 
+				GROUP_CONCAT(CONCAT(c.id, ':', c.name) SEPARATOR ',') as categories,
+				image_path
+			FROM products AS p
+			INNER JOIN product_categories AS pc ON pc.product_id = p.id
+			INNER JOIN categories AS c ON pc.category_id = c.id
+			WHERE p.is_active = 1
+			GROUP BY p.id
+			ORDER BY p.${sortBy} ${sortOrder}
+			LIMIT ?
+			OFFSET ?`,
+			[limit, offset]
+		);
+		if (!queryResults.length === 0) return {
+			success: false,
+			message: "No products found!",
+		};
+
+		queryResults = serverProductImagePaths(queryResults);
+		queryResults = processCategories(queryResults);
+
+		return {
+			success: true,
+			products: queryResults
+		}
 	} catch (error) {
 		return {
 			success: false,
@@ -319,7 +345,7 @@ async function getProductsForCustomerWithFilter(
 			success: true,
 			message: `Found: ${queryResults.length} products`,
 			total_products: totalProducts,
-			data: queryResults,
+			products: queryResults,
 		};
 	} catch (error) {
 		return {
