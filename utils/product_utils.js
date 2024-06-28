@@ -138,7 +138,8 @@ function isProductLimitNumberValid(limit) {
  * @returns If the product sort option is valid
  */
 function isSortOptionValid(sortBy) {
-   if (typeof sortBy === "undefined") return false;
+   if (typeof sortBy === "undefined") return true;
+   if (sortBy.includes(" ")) return false;
    return true;
 }
 
@@ -148,10 +149,9 @@ function isSortOptionValid(sortBy) {
  * @returns If the product sort order is valid
  */
 function isSortOrderValid(sortOrder) {
-   if (typeof sortOrder === "undefined"
-      || (sortOrder.toUpperCase() !== "DESC"
-         && sortOrder.toUpperCase() !== "ASC")
-   ) return false;
+   if (typeof sortOrder === "undefined") return true;
+   if (sortOrder.toUpperCase() !== "DESC"
+      || sortOrder.toUpperCase() !== "ASC") return false;
    return true;
 }
 
@@ -169,14 +169,21 @@ function isIdValid(id) {
 }
 
 /**
- * This function checks if the product search keywords are valid 
- * @param {*} searchKeywords - The product search keywords
- * @returns If the search keywords are valid
+ * Returns pagination and sorting details.
+ * @param {string} page - The page number
+ * @param {string} limit - The number of products in a page
+ * @param {string} sortBy 
+ * @param {string} sortOrder the order of sort option 
+ * @returns {Array} An array containing the offset, limit, sortBy field, and sortOrder.
  */
-function isSearchKeywordsValid(searchKeywords) {
-   if (typeof searchKeywords !== "string") return false;
-   if (searchKeywords.trim().length == 0) return false;
-   return true;
+function processQueryParams(page, limit, sortBy, sortOrder) {
+   limit = parseFloat(limit, 10)
+   const offset = (parseInt(page, 10) - 1) * limit;
+   sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
+   const allowedSortColumns = ["name", "price", "like_count", "create_at",];
+   if (!allowedSortColumns.includes(sortBy))
+      sortBy = "create_at";
+   return [offset, limit, sortBy, sortOrder];
 }
 
 module.exports = {
@@ -191,5 +198,5 @@ module.exports = {
    isSortOrderValid,
    processCategories,
    isIdValid,
-   isSearchKeywordsValid
+   processQueryParams,
 };

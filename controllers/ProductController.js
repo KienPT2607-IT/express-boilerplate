@@ -5,7 +5,6 @@ const {
 	getProductsForCustomer,
 	validateGetProductQueryParams,
 	checkIdValid,
-	validateSearchKeywords,
 	getProductDetail,
 	searchProducts,
 } = require("../services/ProductServices");
@@ -78,10 +77,10 @@ exports.getListProductsForCustomer = async (req, res) => {
 			return res.status(400).json(validationResult);
 
 		const productQueryResult = await getProductsForCustomer(
-			parseInt(page, 10),
-			parseInt(limit, 10),
-			sortBy,
-			sortOrder,
+			page,
+			limit,
+			sortBy || "create_at",
+			sortOrder || "DESC",
 			categoryId
 		);
 		if (!productQueryResult.success) {
@@ -123,6 +122,10 @@ exports.searchProductByName = async (req, res) => {
 	const { search_keywords } = req.body;
 	const { page, limit, sortBy, sortOrder } = req.query;
 	try {
+		if (typeof search_keywords === "undefined") return res.status(400).json({
+			success: false,
+			message: "Invalid search keywords!"
+		});
 		// * Check if all the query parameters are valid before start querying
 		let validationResult = validateGetProductQueryParams(
 			page, limit, sortBy, sortOrder
@@ -130,16 +133,20 @@ exports.searchProductByName = async (req, res) => {
 		if (!validationResult.success)
 			return res.status(400).json(validationResult);
 
-		validationResult = validateSearchKeywords(search_keywords);
-		if (!validationResult.success)
-			return res.status(400).json(validationResult);
-		const searchResults = await searchProducts(
-			search_keywords, 
-			parseInt(page, 10),
-			parseInt(limit, 10), 
-			sortBy, 
-			sortOrder
-		);
+		let searchResults;
+		if (search_keywords.trim().length === 0) {
+			searchResults = await getProductsForCustomer(
+				page, limit,
+				sortBy || "create_at",
+				sortOrder || "DESC"
+			);
+		} else {
+			searchResults = await searchProducts(
+				search_keywords, page, limit,
+				sortBy || "create_at",
+				sortOrder || "DESC"
+			);
+		}
 		if (!searchResults.success) {
 			const statusCode = (searchResults.error) ? 500 : 404;
 			return res.status(statusCode).json(searchResults);

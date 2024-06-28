@@ -14,7 +14,7 @@ const {
 	isSortOrderValid,
 	processCategories,
 	isIdValid,
-	isSearchKeywordsValid,
+	processQueryParams,
 } = require("../utils/product_utils");
 const { checkIdValid: checkCategoryIdValid } = require("../services/CategoryServices");
 const { serverProductImagePaths } = require("../utils/file_utils");
@@ -138,16 +138,16 @@ async function addNewProduct(
 
 /**
  * This function retrieves products from DB and return to customer 
- * @param {number} page - This is the current page number to get data
- * @param {number} limit - The maximum number of products shown in each page
+ * @param {string} page - This is the current page number to get data
+ * @param {string} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order 
- * @param {number | string} categoryId - The id of category which is filtered
+ * @param {string} categoryId - The id of category which is filtered
  * @returns The list of products and along with additional information
  */
 async function getProductsForCustomer(
-	page = 1,
-	limit = 15,
+	page,
+	limit,
 	sortBy,
 	sortOrder,
 	categoryId
@@ -157,11 +157,8 @@ async function getProductsForCustomer(
 	* -> Check the sort order
 	* -> Check if the column will be sorted is allowed 
 	*/
-	const offset = (page - 1) * limit;
-	sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
-	const allowedSortColumns = ["name", "price", "like_count", "create_at",];
-	if (!allowedSortColumns.includes(sortBy))
-		sortBy = "create_at";
+	let offset;
+	[offset, limit, sortBy, sortOrder] = processQueryParams(page, limit, sortBy, sortOrder);
 	try {
 		if (!categoryId) {
 			return await getProductsForCustomerNoFilter(limit, sortBy, sortOrder, offset);
@@ -178,11 +175,11 @@ async function getProductsForCustomer(
 
 /**
  * This function retrieves products from DB
- * @param {number} page - This is the current page number to get data
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order 
- * @returns The list of products and along with additional information
+ * @param {number} offset - WHere the products start being retrieved
+ * @returns The list of products, and along with additional information
  */
 async function getProductsForCustomerNoFilter(
 	limit,
@@ -224,13 +221,34 @@ async function getProductsForCustomerNoFilter(
 		);
 		const totalProducts = countResults[0].count;
 
+		const [categoryQueryResults] = await connection.query(
+			`SELECT 
+				c.id,
+				c.name,
+				COUNT(p.id) as total_products
+			FROM 
+				categories AS c
+			INNER JOIN 
+				product_categories AS pc ON pc.category_id = c.id
+			INNER JOIN 
+				products AS p ON pc.product_id = p.id
+			WHERE 
+				c.is_active = 1
+			GROUP BY 
+				c.id
+			ORDER BY 
+				c.name ASC
+			`,
+		);
+
 		queryResults = serverProductImagePaths(queryResults);
 		queryResults = processCategories(queryResults);
 		return {
 			success: true,
 			message: `Found: ${queryResults.length} products`,
 			total_products: totalProducts,
-			data: queryResults,
+			products: queryResults,
+			categories: categoryQueryResults,
 		};
 	} catch (error) {
 		return {
@@ -243,11 +261,11 @@ async function getProductsForCustomerNoFilter(
 
 /**
  * This function retrieves products from DB
- * @param {number} page - This is the current page number to get data
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order 
  * @param {number | string} categoryId - The id of category which is filtered
+ * @param {number} offset - WHere the products start being retrieved
  * @returns The list of products and along with additional information
  */
 async function getProductsForCustomerWithFilter(
@@ -407,19 +425,15 @@ async function getProductDetail(id) {
 }
 
 /**
- * This function validates if the product search keywords are valid
- * @param {string} search_keywords - The search keywords for products
- * @returns If the search keywords are valid 
- * along with the message if not
+ * Fetches products based on search keywords, pagination, and sorting options.
+ * 
+ * @param {string} search_keywords - The keywords to search for.
+ * @param {number} page - The page number.
+ * @param {number} limit - The number of products per page.
+ * @param {string} sortBy - The field to sort by.
+ * @param {string} sortOrder - The order of sorting (e.g., 'asc' or 'desc').
+ * @returns The list of products and along with additional information
  */
-function validateSearchKeywords(search_keywords) {
-	if (!isSearchKeywordsValid(search_keywords)) return {
-		success: false,
-		message: "Invalid search keywords!"
-	};
-	return { success: true };
-}
-
 async function searchProducts(
 	search_keywords,
 	page = 1,
@@ -427,16 +441,8 @@ async function searchProducts(
 	sortBy,
 	sortOrder,
 ) {
-	/* 
-	* Count the offset to find where to start returning data
-	* -> Check the sort order
-	* -> Check if the column will be sorted is allowed 
-	*/
-	const offset = (page - 1) * limit;
-	sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
-	const allowedSortColumns = ["name", "price", "like_count", "create_at",];
-	if (!allowedSortColumns.includes(sortBy))
-		sortBy = "create_at";
+	let offset;
+	[offset, limit, sortBy, sortOrder] = processQueryParams(page, limit, sortBy, sortOrder);
 	try {
 		let [searchResults] = await connection.query(
 			`SELECT 
@@ -459,7 +465,7 @@ async function searchProducts(
 			OFFSET ?`,
 			[`%${search_keywords}%`, limit, offset]
 		);
-		
+
 		if (searchResults.length == 0) return {
 			success: false,
 			message: "No products found!"
@@ -477,7 +483,7 @@ async function searchProducts(
 			[`%${search_keywords}%`]
 		);
 		const totalProducts = countResults[0].count;
-	
+
 		const [categoryQueryResults] = await connection.query(
 			`SELECT 
 				c.id,
@@ -490,19 +496,21 @@ async function searchProducts(
 			INNER JOIN 
 				products AS p ON pc.product_id = p.id
 			WHERE 
-				c.is_active = 1
+				c.is_active = 1 AND
+				p.name LIKE ? 
 			GROUP BY 
 				c.id
 			ORDER BY 
 				c.name ASC
-			`
-		)
+			`,
+			[`%${search_keywords}%`]
+		);
 
 		return {
 			success: true,
 			message: `Found ${searchResults.length} products!`,
 			total_products: totalProducts,
-			data: searchResults,
+			products: searchResults,
 			categories: categoryQueryResults
 		};
 	} catch (error) {
@@ -520,6 +528,5 @@ module.exports = {
 	validateGetProductQueryParams,
 	checkIdValid,
 	getProductDetail,
-	validateSearchKeywords,
 	searchProducts,
 };
