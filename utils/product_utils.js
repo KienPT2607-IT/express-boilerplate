@@ -151,7 +151,7 @@ function isSortOptionValid(sortBy) {
 function isSortOrderValid(sortOrder) {
    if (typeof sortOrder === "undefined") return true;
    if (sortOrder.toUpperCase() !== "DESC"
-      || sortOrder.toUpperCase() !== "ASC") return false;
+      && sortOrder.toUpperCase() !== "ASC") return false;
    return true;
 }
 
