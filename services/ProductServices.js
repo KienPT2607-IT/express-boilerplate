@@ -14,6 +14,7 @@ const {
 	isSortOrderValid,
 	processCategories,
 	isIdValid,
+	isSearchKeywordsValid,
 } = require("../utils/product_utils");
 const { checkIdValid: checkCategoryIdValid } = require("../services/CategoryServices");
 const { serverProductImagePaths } = require("../utils/file_utils");
@@ -282,8 +283,7 @@ async function getProductsForCustomerWithFilter(
 		);
 		if (queryResults.length === 0) return {
 			success: false,
-			message: "No products found!",
-			total_products: 0
+			message: "No products found!"
 		};
 
 		const [countResults] = await connection.query(
@@ -300,7 +300,7 @@ async function getProductsForCustomerWithFilter(
 		return {
 			success: true,
 			message: `Found: ${queryResults.length} products`,
-			total_items: totalProducts,
+			total_products: totalProducts,
 			data: queryResults,
 		};
 	} catch (error) {
@@ -405,6 +405,114 @@ async function getProductDetail(id) {
 		};
 	}
 }
+
+/**
+ * This function validates if the product search keywords are valid
+ * @param {string} search_keywords - The search keywords for products
+ * @returns If the search keywords are valid 
+ * along with the message if not
+ */
+function validateSearchKeywords(search_keywords) {
+	if (!isSearchKeywordsValid(search_keywords)) return {
+		success: false,
+		message: "Invalid search keywords!"
+	};
+	return { success: true };
+}
+
+async function searchProducts(
+	search_keywords,
+	page = 1,
+	limit = 15,
+	sortBy,
+	sortOrder,
+) {
+	/* 
+	* Count the offset to find where to start returning data
+	* -> Check the sort order
+	* -> Check if the column will be sorted is allowed 
+	*/
+	const offset = (page - 1) * limit;
+	sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
+	const allowedSortColumns = ["name", "price", "like_count", "create_at",];
+	if (!allowedSortColumns.includes(sortBy))
+		sortBy = "create_at";
+	try {
+		let [searchResults] = await connection.query(
+			`SELECT 
+				p.id, 
+				p.name, 
+				price, 
+				quantity,
+				like_count,
+				p.description, 
+				image_path, 
+				p.create_at,
+				GROUP_CONCAT(c.id, ':', c.name) AS categories
+			FROM products AS p
+			INNER JOIN product_categories AS pc ON pc.product_id = p.id
+			INNER JOIN categories AS c ON pc.category_id = c.id
+			WHERE p.is_active = 1 AND c.is_active = 1 AND p.name LIKE ?
+			GROUP BY p.id
+			ORDER BY p.${sortBy} ${sortOrder}
+			LIMIT ?
+			OFFSET ?`,
+			[`%${search_keywords}%`, limit, offset]
+		);
+		
+		if (searchResults.length == 0) return {
+			success: false,
+			message: "No products found!"
+		};
+		searchResults = serverProductImagePaths(searchResults);
+		searchResults = processCategories(searchResults);
+
+		const [countResults] = await connection.query(
+			`SELECT 
+				COUNT(*) AS count 
+			FROM 
+				products
+			WHERE 
+				is_active = 1 AND name LIKE ?`,
+			[`%${search_keywords}%`]
+		);
+		const totalProducts = countResults[0].count;
+	
+		const [categoryQueryResults] = await connection.query(
+			`SELECT 
+				c.id,
+				c.name,
+				COUNT(p.id) as total_products
+			FROM 
+				categories AS c
+			INNER JOIN 
+				product_categories AS pc ON pc.category_id = c.id
+			INNER JOIN 
+				products AS p ON pc.product_id = p.id
+			WHERE 
+				c.is_active = 1
+			GROUP BY 
+				c.id
+			ORDER BY 
+				c.name ASC
+			`
+		)
+
+		return {
+			success: true,
+			message: `Found ${searchResults.length} products!`,
+			total_products: totalProducts,
+			data: searchResults,
+			categories: categoryQueryResults
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: "Search products failed!",
+			error: error.message,
+		};
+	}
+}
 module.exports = {
 	validateNewProductInputs,
 	addNewProduct,
@@ -412,4 +520,6 @@ module.exports = {
 	validateGetProductQueryParams,
 	checkIdValid,
 	getProductDetail,
+	validateSearchKeywords,
+	searchProducts,
 };

@@ -5,7 +5,9 @@ const {
 	getProductsForCustomer,
 	validateGetProductQueryParams,
 	checkIdValid,
+	validateSearchKeywords,
 	getProductDetail,
+	searchProducts,
 } = require("../services/ProductServices");
 const { removeUploadFile } = require("../utils/file_utils");
 
@@ -98,16 +100,16 @@ exports.getListProductsForCustomer = async (req, res) => {
 
 exports.getProductDetail = async (req, res) => {
 	try {
-		const validationResult = checkIdValid(req.params.id)
-		if (!validationResult.success) 
-			return res.status(400).json(validationResult)
+		const validationResult = checkIdValid(req.params.id);
+		if (!validationResult.success)
+			return res.status(400).json(validationResult);
 
-		const queryResult = await getProductDetail(req.params.id)
-		if (!queryResult.success){
-			const statusCode = (queryResult.error) ? 500 : 404
-			return res.status(statusCode).json(queryResult)
+		const queryResult = await getProductDetail(req.params.id);
+		if (!queryResult.success) {
+			const statusCode = (queryResult.error) ? 500 : 404;
+			return res.status(statusCode).json(queryResult);
 		}
-		return res.status(200).json(queryResult)
+		return res.status(200).json(queryResult);
 	} catch (error) {
 		return res.status(500).json({
 			success: false,
@@ -115,4 +117,39 @@ exports.getProductDetail = async (req, res) => {
 			error: error.message,
 		});
 	}
-}
+};
+
+exports.searchProductByName = async (req, res) => {
+	const { search_keywords } = req.body;
+	const { page, limit, sortBy, sortOrder } = req.query;
+	try {
+		// * Check if all the query parameters are valid before start querying
+		let validationResult = validateGetProductQueryParams(
+			page, limit, sortBy, sortOrder
+		);
+		if (!validationResult.success)
+			return res.status(400).json(validationResult);
+
+		validationResult = validateSearchKeywords(search_keywords);
+		if (!validationResult.success)
+			return res.status(400).json(validationResult);
+		const searchResults = await searchProducts(
+			search_keywords, 
+			parseInt(page, 10),
+			parseInt(limit, 10), 
+			sortBy, 
+			sortOrder
+		);
+		if (!searchResults.success) {
+			const statusCode = (searchResults.error) ? 500 : 404;
+			return res.status(statusCode).json(searchResults);
+		}
+		return res.status(200).json(searchResults);
+	} catch (error) {
+		return res.status(500).json({
+			success: false,
+			message: "Server error!",
+			error: error.message,
+		});
+	}
+};
