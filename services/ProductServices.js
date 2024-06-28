@@ -319,7 +319,7 @@ async function getProductsForCustomerWithFilter(
 			success: true,
 			message: `Found: ${queryResults.length} products`,
 			total_products: totalProducts,
-			data: queryResults,
+			products: queryResults,
 		};
 	} catch (error) {
 		return {
