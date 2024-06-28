@@ -25,7 +25,7 @@ function checkDesValid(description) {
       return true
    if (typeof description !== "string")
       return false
-   if (!description.trim())
+   if (!description.trim().length === 0)
       return false
    return true
 }

@@ -175,7 +175,7 @@ router.post(
  *                 total_products:
  *                   type: integer
  *                   example: 10
- *                 data:
+ *                 products:
  *                   type: array
  *                   items:
  *                     type: object
@@ -215,6 +215,20 @@ router.post(
  *                       image_path:
  *                         type: string
  *                         example: http:/localhost:3000/products/71guL0VnKiL._AC_SL1024_.jpg
+ *                 categories:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       name:
+ *                         type: string
+ *                         example: Lego Ninja Go
+ *                       total_product:
+ *                         type: integer
+ *                         example: 145
  *       400:
  *         description: Client error
  *         content:
@@ -457,7 +471,7 @@ router.get(
  *                 total_products:
  *                   type: integer
  *                   example: 10
- *                 data:
+ *                 products:
  *                   type: array
  *                   items:
  *                     type: object
@@ -497,6 +511,20 @@ router.get(
  *                       image_path:
  *                         type: string
  *                         example: http:/localhost:3000/products/71guL0VnKiL._AC_SL1024_.jpg
+ *                 categories:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       name:
+ *                         type: string
+ *                         example: Lego Ninja Go
+ *                       total_product:
+ *                         type: integer
+ *                         example: 145
  *       400:
  *         description: Client error
  *         content:
