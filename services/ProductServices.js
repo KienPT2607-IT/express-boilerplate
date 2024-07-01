@@ -16,7 +16,9 @@ const {
 	isIdValid,
 	processQueryParams,
 } = require("../utils/product_utils");
-const { checkIdValid: checkCategoryIdValid } = require("../services/CategoryServices");
+const {
+	checkIdValid: checkCategoryIdValid,
+} = require("../services/CategoryServices");
 const { serverProductImagePaths } = require("../utils/file_utils");
 
 /**
@@ -137,11 +139,11 @@ async function addNewProduct(
 }
 
 /**
- * This function retrieves products from DB and return to customer 
+ * This function retrieves products from DB and return to customer
  * @param {string} page - This is the current page number to get data
  * @param {string} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
- * @param {string} sortOrder - The sort order 
+ * @param {string} sortOrder - The sort order
  * @param {string} categoryId - The id of category which is filtered
  * @returns The list of products and along with additional information
  */
@@ -152,18 +154,34 @@ async function getProductsForCustomer(
 	sortOrder,
 	categoryId
 ) {
-	/* 
-	* Count the offset to find where to start returning data
-	* -> Check the sort order
-	* -> Check if the column will be sorted is allowed 
-	*/
+	/*
+	 * Count the offset to find where to start returning data
+	 * -> Check the sort order
+	 * -> Check if the column will be sorted is allowed
+	 */
 	let offset;
-	[offset, limit, sortBy, sortOrder] = processQueryParams(page, limit, sortBy, sortOrder);
+	[offset, limit, sortBy, sortOrder] = processQueryParams(
+		page,
+		limit,
+		sortBy,
+		sortOrder
+	);
 	try {
 		if (!categoryId) {
-			return await getProductsForCustomerNoFilter(limit, sortBy, sortOrder, offset);
+			return await getProductsForCustomerNoFilter(
+				limit,
+				sortBy,
+				sortOrder,
+				offset
+			);
 		}
-		return await getProductsForCustomerWithFilter(limit, sortBy, sortOrder, categoryId, offset);
+		return await getProductsForCustomerWithFilter(
+			limit,
+			sortBy,
+			sortOrder,
+			categoryId,
+			offset
+		);
 	} catch (error) {
 		return {
 			success: true,
@@ -177,7 +195,7 @@ async function getProductsForCustomer(
  * This function retrieves products from DB
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
- * @param {string} sortOrder - The sort order 
+ * @param {string} sortOrder - The sort order
  * @param {number} offset - WHere the products start being retrieved
  * @returns The list of products, and along with additional information
  */
@@ -188,18 +206,41 @@ async function getProductsForCustomerNoFilter(
 	offset
 ) {
 	try {
-		let queryProductResults = await getProductWithNoFilter(limit, sortBy, sortOrder, offset)
-		if (!queryProductResults.success) 
-			return queryProductResults
-		const [countResults] = await connection.query(
-			`SELECT COUNT(*) AS count 
-			FROM products
-			WHERE is_active = 1`
+		const queryProductResults = await getProductWithNoFilter(
+			limit,
+			sortBy,
+			sortOrder,
+			offset
 		);
-		const totalProducts = countResults[0].count;
+		if (!queryProductResults.success) return queryProductResults;
+		const totalProducts = await getTotalProductsWithNoFilter();
 
-		const [categoryQueryResults] = await connection.query(
-			`SELECT 
+		const categoryListWithTotalProducts =
+			await getCategoryListWithTotalProducts();
+
+		return {
+			success: true,
+			message: `Found: ${queryProductResults.products.length} products`,
+			total_products: totalProducts,
+			products: queryProductResults.products,
+			categories: categoryListWithTotalProducts,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: "Get products failed!",
+			error: error.message,
+		};
+	}
+}
+
+/**
+ * The function returns the list of categories along with total products of each
+ * @returns The list of categories along with total products which each category holds
+ */
+async function getCategoryListWithTotalProducts() {
+	const [categoryQueryResults] = await connection.query(
+		`SELECT 
 				c.id,
 				c.name,
 				COUNT(p.id) as total_products
@@ -215,30 +256,30 @@ async function getProductsForCustomerNoFilter(
 				c.id
 			ORDER BY 
 				c.name ASC
-			`,
-		);
+			`
+	);
+	return categoryQueryResults;
+}
 
-		return {
-			success: true,
-			message: `Found: ${queryProductResults.products.length} products`,
-			total_products: totalProducts,
-			products: queryProductResults.products,
-			categories: categoryQueryResults,
-		};
-	} catch (error) {
-		return {
-			success: false,
-			message: "Get products failed!",
-			error: error.message,
-		};
-	}
+/**
+ * The function returns the total products stored in database
+ * @returns The total available products
+ */
+async function getTotalProductsWithNoFilter() {
+	const [countResults] = await connection.query(
+		`SELECT COUNT(*) AS count 
+			FROM products
+			WHERE is_active = 1`
+	);
+	const totalProducts = countResults[0].count;
+	return totalProducts;
 }
 
 /**
  * This function retrieves products from DB
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
- * @param {string} sortOrder - The sort order 
+ * @param {string} sortOrder - The sort order
  * @param {number} offset - WHere the products start being retrieved
  * @returns The list of products, and along with additional information
  */
@@ -264,18 +305,19 @@ async function getProductWithNoFilter(limit, sortBy, sortOrder, offset) {
 			OFFSET ?`,
 			[limit, offset]
 		);
-		if (!queryResults.length === 0) return {
-			success: false,
-			message: "No products found!",
-		};
+		if (!queryResults.length === 0)
+			return {
+				success: false,
+				message: "No products found!",
+			};
 
 		queryResults = serverProductImagePaths(queryResults);
 		queryResults = processCategories(queryResults);
 
 		return {
 			success: true,
-			products: queryResults
-		}
+			products: queryResults,
+		};
 	} catch (error) {
 		return {
 			success: false,
@@ -289,7 +331,7 @@ async function getProductWithNoFilter(limit, sortBy, sortOrder, offset) {
  * This function retrieves products from DB
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
- * @param {string} sortOrder - The sort order 
+ * @param {string} sortOrder - The sort order
  * @param {number | string} categoryId - The id of category which is filtered
  * @param {number} offset - WHere the products start being retrieved
  * @returns The list of products and along with additional information
@@ -305,8 +347,65 @@ async function getProductsForCustomerWithFilter(
 		// * Check if category is available for filtering products
 		const isCategoryAvailable = await checkCategoryExists(categoryId);
 		if (!isCategoryAvailable.success) return isCategoryAvailable;
-		let [queryResults] = await connection.query(
-			`SELECT 
+		const queryResults = await getProductsWithFilter(
+			sortBy,
+			sortOrder,
+			categoryId,
+			limit,
+			offset
+		);
+		if (!queryResults.success) return queryResults
+
+		const totalProducts = await getTotalProductsWithFilter(categoryId);
+		return {
+			success: true,
+			message: `Found: ${queryResults.products.length} products`,
+			total_products: totalProducts,
+			products: queryResults.products,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: "Get products failed!",
+			error: error.message,
+		};
+	}
+}
+
+/**
+ * The functions get the total products of category when filtering
+ * @param {string} categoryId - The id of category which will use to filter products
+ * @returns The total products that belong to filtering category
+ */
+async function getTotalProductsWithFilter(categoryId) {
+	const [countResults] = await connection.query(
+		`SELECT COUNT(*) AS count 
+			FROM products as p
+			INNER JOIN product_categories AS pc ON pc.product_id = p.id
+			WHERE p.is_active = 1 AND pc.category_id = ?`,
+		[categoryId]
+	);
+	return countResults[0].count;
+}
+
+/**
+ * This function retrieves products from DB
+ * @param {string} sortBy - The column name to be sorted
+ * @param {string} sortOrder - The sort order
+ * @param {number | string} categoryId - The id of category which is filtered
+ * @param {number} limit - The maximum number of products shown in each page
+ * @param {number} offset - WHere the products start being retrieved
+ * @returns The list of products and along with additional information
+ */
+async function getProductsWithFilter(
+	sortBy,
+	sortOrder,
+	categoryId,
+	limit,
+	offset
+) {
+	let [queryResults] = await connection.query(
+		`SELECT 
 				p.id,
 				p.name, 
 				price, 
@@ -323,70 +422,63 @@ async function getProductsForCustomerWithFilter(
 			ORDER BY p.${sortBy} ${sortOrder}
 			LIMIT ?
 			OFFSET ?`,
-			[categoryId, limit, offset]
-		);
-		if (queryResults.length === 0) return {
-			success: false,
-			message: "No products found!"
-		};
-
-		const [countResults] = await connection.query(
-			`SELECT COUNT(*) AS count 
-			FROM products as p
-			INNER JOIN product_categories AS pc ON pc.product_id = p.id
-			WHERE p.is_active = 1 AND pc.category_id = ?`,
-			[categoryId]
-		);
-		const totalProducts = countResults[0].count;
-
-		queryResults = serverProductImagePaths(queryResults);
-		queryResults = processCategories(queryResults);
-		return {
-			success: true,
-			message: `Found: ${queryResults.length} products`,
-			total_products: totalProducts,
-			products: queryResults,
-		};
-	} catch (error) {
+		[categoryId, limit, offset]
+	);
+	if (queryResults.length === 0)
 		return {
 			success: false,
-			message: "Get products failed!",
-			error: error.message,
+			message: "No products found!",
 		};
-	}
+
+	queryResults = serverProductImagePaths(queryResults);
+	queryResults = processCategories(queryResults);
+	return {
+		success: true,
+		products: queryResults,
+	};
 }
 
 /**
- * 
+ *
  * @param {string} page - This is the current page number to get data
- * @param {string} limit 
- * @param {string | undefined} sortBy 
- * @param {string | undefined} sortOrder 
- * @param {string | undefined} categoryId 
+ * @param {string} limit
+ * @param {string | undefined} sortBy
+ * @param {string | undefined} sortOrder
+ * @param {string | undefined} categoryId
  */
-function validateGetProductQueryParams(page, limit, sortBy, sortOrder, categoryId) {
-	if (!isPageNumberValid(page)) return {
-		success: false,
-		message: "Invalid page number!"
-	};
-	if (!isProductLimitNumberValid(limit)) return {
-		success: false,
-		message: "Invalid product limit number!"
-	};
-	if (!isSortOptionValid(sortBy)) return {
-		success: false,
-		message: "Invalid sort option!"
-	};
-	if (!isSortOrderValid(sortOrder)) return {
-		success: false,
-		message: "Invalid sort order!"
-	};
-	if (typeof categoryId !== "undefined"
-		&& categoryId.trim().length != 0)
-		if (!checkCategoryIdValid(categoryId)) return {
+function validateGetProductQueryParams(
+	page,
+	limit,
+	sortBy,
+	sortOrder,
+	categoryId
+) {
+	if (!isPageNumberValid(page))
+		return {
 			success: false,
-			message: "Invalid category id"
+			message: "Invalid page number!",
 		};
+	if (!isProductLimitNumberValid(limit))
+		return {
+			success: false,
+			message: "Invalid product limit number!",
+		};
+	if (!isSortOptionValid(sortBy))
+		return {
+			success: false,
+			message: "Invalid sort option!",
+		};
+	if (!isSortOrderValid(sortOrder))
+		return {
+			success: false,
+			message: "Invalid sort order!",
+		};
+	if (typeof categoryId !== "undefined" && categoryId.trim().length != 0)
+		if (!checkCategoryIdValid(categoryId))
+			return {
+				success: false,
+				message: "Invalid category id",
+			};
 
 	return { success: true };
 }
@@ -397,10 +489,11 @@ function validateGetProductQueryParams(page, limit, sortBy, sortOrder, categoryI
  * @returns If the id is valid along with the message if invalid
  */
 function checkIdValid(id) {
-	if (!isIdValid(id)) return {
-		success: false,
-		message: "Invalid product id!"
-	};
+	if (!isIdValid(id))
+		return {
+			success: false,
+			message: "Invalid product id!",
+		};
 	return { success: true };
 }
 
@@ -430,15 +523,16 @@ async function getProductDetail(id) {
 			GROUP BY p.id`,
 			[id]
 		);
-		if (queryResult.length == 0) return {
-			success: false,
-			message: "Product not found!"
-		};
+		if (queryResult.length == 0)
+			return {
+				success: false,
+				message: "Product not found!",
+			};
 		queryResult = serverProductImagePaths(queryResult);
 		queryResult = processCategories(queryResult);
 		return {
 			success: true,
-			data: queryResult
+			data: queryResult,
 		};
 	} catch (error) {
 		console.log(error);
@@ -452,7 +546,7 @@ async function getProductDetail(id) {
 
 /**
  * Fetches products based on search keywords, pagination, and sorting options.
- * 
+ *
  * @param {string} search_keywords - The keywords to search for.
  * @param {number} page - The page number.
  * @param {number} limit - The number of products per page.
@@ -465,10 +559,15 @@ async function searchProducts(
 	page = 1,
 	limit = 15,
 	sortBy,
-	sortOrder,
+	sortOrder
 ) {
 	let offset;
-	[offset, limit, sortBy, sortOrder] = processQueryParams(page, limit, sortBy, sortOrder);
+	[offset, limit, sortBy, sortOrder] = processQueryParams(
+		page,
+		limit,
+		sortBy,
+		sortOrder
+	);
 	try {
 		let [searchResults] = await connection.query(
 			`SELECT 
@@ -492,10 +591,11 @@ async function searchProducts(
 			[`%${search_keywords}%`, limit, offset]
 		);
 
-		if (searchResults.length == 0) return {
-			success: false,
-			message: "No products found!"
-		};
+		if (searchResults.length == 0)
+			return {
+				success: false,
+				message: "No products found!",
+			};
 		searchResults = serverProductImagePaths(searchResults);
 		searchResults = processCategories(searchResults);
 
@@ -537,7 +637,7 @@ async function searchProducts(
 			message: `Found ${searchResults.length} products!`,
 			total_products: totalProducts,
 			products: searchResults,
-			categories: categoryQueryResults
+			categories: categoryQueryResults,
 		};
 	} catch (error) {
 		return {
