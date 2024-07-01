@@ -138,20 +138,23 @@ async function addNewProduct(
 
 /**
  * This function retrieves products from DB and return to customer
+ * @param {string} textQuery - The search keywords
  * @param {string} page - This is the current page number to get data
  * @param {string} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order
  * @param {string} category - The id of category which is filtered
+ * @param {string} relatedToProduct - The id of product to find other related products
  * @returns The list of products and along with additional information
  */
 async function getProductsForCustomer(
+	textQuery,
 	page,
 	limit,
 	sortBy,
 	sortOrder,
 	category,
-	product,
+	relatedToProduct,
 ) {
 	/*
 	 * Count the offset to find where to start returning data
@@ -166,27 +169,24 @@ async function getProductsForCustomer(
 		sortOrder
 	);
 	try {
-		if (category) {
-			return await getProductsForCustomerWithFilter(
-				limit,
-				sortBy,
-				sortOrder,
-				category,
-				offset
-			);
+		// * Get list of products related to the provided product
+		if (relatedToProduct) {
+			return await getListRelatedProducts({
+				relatedToProduct: relatedToProduct,
+				limit: limit
+			});
 		}
-		if (product) {
-			return await getRelatedProductsForCustomer(
-				limit,
-				product
-			);
-		}
-		return await getProductsForCustomerNoFilter(
-			limit,
-			sortBy,
-			sortOrder,
-			offset
-		);
+
+		// * Get list of product with option: 
+		// * ->	search(textQuery-required, category-optional)/filter (category-required)/ view all(textQuey, category not provided)
+		return await getListProducts({
+			textQuery: textQuery,
+			category: category,
+			sortBy: sortBy,
+			sortOrder: sortOrder,
+			limit: limit,
+			offset: offset
+		});
 	} catch (error) {
 		return {
 			success: true,
@@ -197,48 +197,115 @@ async function getProductsForCustomer(
 }
 
 /**
- * The function get the products related to the provided product's id
- * @param {number} limit - The number of products will be returned
- * @param {string} product - The product id which will use to get related products based on it
- * @returns The list of products along with additional data
+ * The function get list of products
+ * @param {object} options - The criteria used to get products
+ * @returns The object contains list of product along with additional data
  */
-async function getRelatedProductsForCustomer(limit = 25, product) {
+async function getListProducts(options) {
+	let queryResults, totalProducts, categoryListWithTotalProducts;
+
+	// * The sql statement's components pre-prepared
+	let sql = `
+		SELECT
+				p.id,
+				p.name,
+				price,
+				quantity,
+				like_count,
+				image_path
+			FROM 
+				products AS p`;
+	const joinStatements = `
+		INNER JOIN product_categories AS pc ON pc.product_id = p.id
+		INNER JOIN categories AS c ON pc.category_id = c.id`;
+	const whereStatements = `
+		WHERE
+			p.is_active = 1`;
+	const orderStatement = ` ORDER BY p.${options.sortBy} ${options.sortOrder}`;
+	const paginationStatements = ` LIMIT ? OFFSET ?`;
+
 	try {
-		const queryProductResults = await getProductsRelated(limit, product,);
-		if (!queryProductResults.success)
-			return queryProductResults;
-		if (queryProductResults.products.length === 0)
-			return {
-				success: false,
-				message: "No related products found!"
-			};
+		// * Perform search products
+		if (options.textQuery) {
+			sql += joinStatements;
+			sql += whereStatements + ` AND c.is_active = 1`;
+			sql += ` AND p.name LIKE ?`;
+			sql += (options.category) ? ` AND c.id = ?` : "";
+			sql += ` GROUP BY p.id`;
+			sql += orderStatement;
+			sql += paginationStatements;
+
+			// * Perform search based on whether the category is provided
+			[queryResults] = await connection.query(
+				sql,
+				(options.category)
+					? [`%${options.textQuery}%`, options.category, options.limit, options.offset]
+					: [`%${options.textQuery}%`, options.limit, options.offset]
+			);
+			totalProducts = await getTotalProductWithTextQuery(options.textQuery);
+		} else if (options.category) {
+			// * Perform filter products based on provided category
+			sql += joinStatements;
+			sql += whereStatements + ` AND c.is_active = 1`;
+			sql += ` AND c.id = ?`;
+			sql += ` GROUP BY p.id`;
+			sql += orderStatement;
+			sql += paginationStatements;
+			[queryResults] = await connection.query(
+				sql,
+				[options.category, options.limit, options.offset]
+			);
+			totalProducts = await getTotalProductsWithFilter(options.category);
+		} else {
+			// * Perform get normal list of products
+			sql += whereStatements;
+			sql += orderStatement;
+			sql += paginationStatements;
+			[queryResults] = await connection.query(
+				sql,
+				[options.limit, options.offset]
+			);
+			totalProducts = await getTotalProductsWithNoFilter();
+		}
+		if (queryResults.length === 0) return {
+			success: false,
+			message: "No products found!"
+		};
+
+		// * Get list of categories and their total products based on the options' criteria
+		categoryListWithTotalProducts = await getCategoryListWithTotalProducts(options);
+
+		queryResults = serverProductImagePaths(queryResults);
 		return {
 			success: true,
-			message: `Found: ${queryProductResults.products.length} products`,
-			products: queryProductResults.products,
+			message: `Found: ${queryResults.length} products`,
+			total_products: totalProducts,
+			products: queryResults,
+			categories: categoryListWithTotalProducts
 		};
 	} catch (error) {
 		return {
 			success: false,
-			message: "Get related products failed!",
-			error: error.message
+			message: "Error fetching products",
+			error: error.message,
 		};
 	}
+
 }
 
 /**
- * The function get the products related to the provided product's id
- * @param {number} limit - The number of products will be returned
- * @param {string} product - The product id which will use to get related products based on it
- * @returns The list of products along with additional data
+ * The function get list of products related to the provided one
+ * @param {object} options - The criteria used to get products
+ * @returns The object contains list of product related to the provided one along with additional data
  */
-async function getProductsRelated(limit, product,) {
+async function getListRelatedProducts(options) {
 	try {
 		let [queryResults] = await connection.query(
 			`SELECT 
 					DISTINCT p.id,
 					p.name,
 					p.price,
+					quantity,
 					p.like_count,
 					p.image_path
 				FROM 
@@ -257,8 +324,13 @@ async function getProductsRelated(limit, product,) {
 					p.name ASC
 				LIMIT ?
 				`,
-			[product, product, limit]
+			[options.relatedToProduct, options.relatedToProduct, options.limit]
 		);
+		if (!queryResults.length) return {
+			success: false,
+			message: "No products found!",
+		};
+		// Process serving image as static file
 		queryResults = serverProductImagePaths(queryResults);
 
 		return {
@@ -266,55 +338,9 @@ async function getProductsRelated(limit, product,) {
 			products: queryResults,
 		};
 	} catch (error) {
-		console.log(error);
 		return {
 			success: false,
-			message: "Get related products failed!",
-			error: error.message,
-		};
-	}
-
-
-}
-
-/**
- * This function retrieves products from DB
- * @param {number} limit - The maximum number of products shown in each page
- * @param {string} sortBy - The column name to be sorted
- * @param {string} sortOrder - The sort order
- * @param {number} offset - WHere the products start being retrieved
- * @returns The list of products, and along with additional information
- */
-async function getProductsForCustomerNoFilter(
-	limit,
-	sortBy,
-	sortOrder,
-	offset
-) {
-	try {
-		const queryProductResults = await getProductWithNoFilter(
-			limit,
-			sortBy,
-			sortOrder,
-			offset
-		);
-		if (!queryProductResults.success) return queryProductResults;
-		const totalProducts = await getTotalProductsWithNoFilter();
-
-		const categoryListWithTotalProducts =
-			await getCategoryListWithTotalProducts();
-
-		return {
-			success: true,
-			message: `Found: ${queryProductResults.products.length} products`,
-			total_products: totalProducts,
-			products: queryProductResults.products,
-			categories: categoryListWithTotalProducts,
-		};
-	} catch (error) {
-		return {
-			success: false,
-			message: "Get products failed!",
+			message: "Error fetching related products",
 			error: error.message,
 		};
 	}
@@ -324,9 +350,9 @@ async function getProductsForCustomerNoFilter(
  * The function returns the list of categories along with total products of each
  * @returns The list of categories along with total products which each category holds
  */
-async function getCategoryListWithTotalProducts() {
-	const [categoryQueryResults] = await connection.query(
-		`SELECT 
+async function getCategoryListWithTotalProducts(options) {
+	let sql = `
+		SELECT 
 				c.id,
 				c.name,
 				COUNT(p.id) as total_products
@@ -337,14 +363,33 @@ async function getCategoryListWithTotalProducts() {
 			INNER JOIN 
 				products AS p ON pc.product_id = p.id
 			WHERE 
-				c.is_active = 1
-			GROUP BY 
-				c.id
-			ORDER BY 
-				c.name ASC
-			`
-	);
-	return categoryQueryResults;
+				c.is_active = 1`;
+	if (options.textQuery) {
+		if (options.category)
+			sql += ` AND c.id = ? AND p.name LIKE ?`;
+		else
+			sql += ` AND p.name LIKE ?`;
+		sql += ` GROUP BY c.id ORDER BY c.name ASC`;
+
+		const [categoryQueryResults] = await connection.query(
+			sql,
+			(options.category)
+				? [options.category, `%${options.textQuery}%`]
+				: [`%${options.textQuery}%`]
+		);
+		return categoryQueryResults;
+	} else if (options.category) {
+		sql += ` AND c.id = ?`;
+		const [categoryQueryResult] = await connection.query(
+			sql,
+			[options.category]
+		);
+		return categoryQueryResult;
+	} else {
+		sql += ` GROUP BY c.id ORDER BY c.name ASC`;
+		const [categoryQueryResults] = await connection.query(sql);
+		return categoryQueryResults;
+	}
 }
 
 /**
@@ -362,100 +407,21 @@ async function getTotalProductsWithNoFilter() {
 }
 
 /**
- * This function retrieves products from DB
- * @param {number} limit - The maximum number of products shown in each page
- * @param {string} sortBy - The column name to be sorted
- * @param {string} sortOrder - The sort order
- * @param {number} offset - WHere the products start being retrieved
- * @returns The list of products, and along with additional information
+ * The function get the total number of products that matches the search string 
+ * @param {string} textQuery - The search string
+ * @returns The total products matching with the search string
  */
-async function getProductWithNoFilter(limit, sortBy, sortOrder, offset) {
-	try {
-		let [queryResults] = await connection.query(
-			`SELECT 
-				p.id,
-				p.name, 
-				price, 
-				quantity, 
-				like_count, 
-				dislike_count, 
-				GROUP_CONCAT(CONCAT(c.id, ':', c.name) SEPARATOR ',') as categories,
-				image_path
-			FROM products AS p
-			INNER JOIN product_categories AS pc ON pc.product_id = p.id
-			INNER JOIN categories AS c ON pc.category_id = c.id
-			WHERE p.is_active = 1
-			GROUP BY p.id
-			ORDER BY p.${sortBy} ${sortOrder}
-			LIMIT ?
-			OFFSET ?`,
-			[limit, offset]
-		);
-		if (!queryResults.length === 0)
-			return {
-				success: false,
-				message: "No products found!",
-			};
-
-		queryResults = serverProductImagePaths(queryResults);
-		queryResults = processCategories(queryResults);
-
-		return {
-			success: true,
-			products: queryResults,
-		};
-	} catch (error) {
-		return {
-			success: false,
-			message: "Get products failed!",
-			error: error.message,
-		};
-	}
-}
-
-/**
- * This function retrieves products from DB
- * @param {number} limit - The maximum number of products shown in each page
- * @param {string} sortBy - The column name to be sorted
- * @param {string} sortOrder - The sort order
- * @param {number | string} category - The id of category which is filtered
- * @param {number} offset - WHere the products start being retrieved
- * @returns The list of products and along with additional information
- */
-async function getProductsForCustomerWithFilter(
-	limit,
-	sortBy,
-	sortOrder,
-	category,
-	offset
-) {
-	try {
-		// * Check if category is available for filtering products
-		const isCategoryAvailable = await checkCategoryExists(category);
-		if (!isCategoryAvailable.success) return isCategoryAvailable;
-		const queryResults = await getProductsWithFilter(
-			sortBy,
-			sortOrder,
-			category,
-			limit,
-			offset
-		);
-		if (!queryResults.success) return queryResults;
-
-		const totalProducts = await getTotalProductsWithFilter(category);
-		return {
-			success: true,
-			message: `Found: ${queryResults.products.length} products`,
-			total_products: totalProducts,
-			products: queryResults.products,
-		};
-	} catch (error) {
-		return {
-			success: false,
-			message: "Get products failed!",
-			error: error.message,
-		};
-	}
+async function getTotalProductWithTextQuery(textQuery) {
+	const [countResults] = await connection.query(
+		`SELECT 
+				COUNT(*) AS count 
+			FROM 
+				products
+			WHERE 
+				is_active = 1 AND name LIKE ?`,
+		[`%${textQuery}%`]
+	);
+	return countResults[0].count;
 }
 
 /**
@@ -472,56 +438,6 @@ async function getTotalProductsWithFilter(categoryId) {
 		[categoryId]
 	);
 	return countResults[0].count;
-}
-
-/**
- * This function retrieves products from DB
- * @param {string} sortBy - The column name to be sorted
- * @param {string} sortOrder - The sort order
- * @param {number | string} category - The id of category which is filtered
- * @param {number} limit - The maximum number of products shown in each page
- * @param {number} offset - WHere the products start being retrieved
- * @returns The list of products and along with additional information
- */
-async function getProductsWithFilter(
-	sortBy,
-	sortOrder,
-	category,
-	limit,
-	offset
-) {
-	let [queryResults] = await connection.query(
-		`SELECT 
-				p.id,
-				p.name, 
-				price, 
-				quantity, 
-				like_count, 
-				dislike_count, 
-				GROUP_CONCAT(c.id, ':', c.name) as categories,
-				image_path
-			FROM products AS p
-			INNER JOIN product_categories AS pc ON pc.product_id = p.id
-			INNER JOIN categories AS c ON pc.category_id = c.id
-			WHERE p.is_active = 1 AND c.id = ?
-			GROUP BY p.id
-			ORDER BY p.${sortBy} ${sortOrder}
-			LIMIT ?
-			OFFSET ?`,
-		[category, limit, offset]
-	);
-	if (queryResults.length === 0)
-		return {
-			success: false,
-			message: "No products found!",
-		};
-
-	queryResults = serverProductImagePaths(queryResults);
-	queryResults = processCategories(queryResults);
-	return {
-		success: true,
-		products: queryResults,
-	};
 }
 
 /**
@@ -637,109 +553,6 @@ async function getProductDetail(id) {
 	}
 }
 
-/**
- * Fetches products based on search keywords, pagination, and sorting options.
- *
- * @param {string} search_keywords - The keywords to search for.
- * @param {number} page - The page number.
- * @param {number} limit - The number of products per page.
- * @param {string} sortBy - The field to sort by.
- * @param {string} sortOrder - The order of sorting (e.g., 'asc' or 'desc').
- * @returns The list of products and along with additional information
- */
-async function searchProducts(
-	search_keywords,
-	page = 1,
-	limit = 15,
-	sortBy,
-	sortOrder
-) {
-	let offset;
-	[offset, limit, sortBy, sortOrder] = processQueryParams(
-		page,
-		limit,
-		sortBy,
-		sortOrder
-	);
-	try {
-		let [searchResults] = await connection.query(
-			`SELECT 
-				p.id, 
-				p.name, 
-				price, 
-				quantity,
-				like_count,
-				p.description, 
-				image_path, 
-				p.create_at,
-				GROUP_CONCAT(c.id, ':', c.name) AS categories
-			FROM products AS p
-			INNER JOIN product_categories AS pc ON pc.product_id = p.id
-			INNER JOIN categories AS c ON pc.category_id = c.id
-			WHERE p.is_active = 1 AND c.is_active = 1 AND p.name LIKE ?
-			GROUP BY p.id
-			ORDER BY p.${sortBy} ${sortOrder}
-			LIMIT ?
-			OFFSET ?`,
-			[`%${search_keywords}%`, limit, offset]
-		);
-
-		if (searchResults.length == 0)
-			return {
-				success: false,
-				message: "No products found!",
-			};
-		searchResults = serverProductImagePaths(searchResults);
-		searchResults = processCategories(searchResults);
-
-		const [countResults] = await connection.query(
-			`SELECT 
-				COUNT(*) AS count 
-			FROM 
-				products
-			WHERE 
-				is_active = 1 AND name LIKE ?`,
-			[`%${search_keywords}%`]
-		);
-		const totalProducts = countResults[0].count;
-
-		const [categoryQueryResults] = await connection.query(
-			`SELECT 
-				c.id,
-				c.name,
-				COUNT(p.id) as total_products
-			FROM 
-				categories AS c
-			INNER JOIN 
-				product_categories AS pc ON pc.category_id = c.id
-			INNER JOIN 
-				products AS p ON pc.product_id = p.id
-			WHERE 
-				c.is_active = 1 AND
-				p.name LIKE ? 
-			GROUP BY 
-				c.id
-			ORDER BY 
-				c.name ASC
-			`,
-			[`%${search_keywords}%`]
-		);
-
-		return {
-			success: true,
-			message: `Found ${searchResults.length} products!`,
-			total_products: totalProducts,
-			products: searchResults,
-			categories: categoryQueryResults,
-		};
-	} catch (error) {
-		return {
-			success: false,
-			message: "Search products failed!",
-			error: error.message,
-		};
-	}
-}
 module.exports = {
 	validateNewProductInputs,
 	addNewProduct,
@@ -747,5 +560,4 @@ module.exports = {
 	validateGetProductQueryParams,
 	checkIdValid,
 	getProductDetail,
-	searchProducts,
 };

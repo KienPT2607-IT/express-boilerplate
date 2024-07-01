@@ -143,6 +143,21 @@ router.post(
  *         required: true
  *         description: Number of items per page (default is 10, max is 100)
  *       - in: query
+ *         name: textQuery
+ *         schema:
+ *           type: string
+ *         description: The search string which will be used to perform relatively search on products name
+ *       - in: query
+ *         name: relatedToProduct
+ *         schema:
+ *           type: integer
+ *         description: The product id which will use to get related products based on it
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: integer
+ *         description: Filter products by category ID
+ *       - in: query
  *         name: sortBy
  *         schema:
  *           type: string
@@ -155,16 +170,6 @@ router.post(
  *           enum: [asc, desc]
  *           default: desc
  *         description: Sort order (ascending or descending)
- *       - in: query
- *         name: product
- *         schema:
- *           type: integer
- *         description: The product id which will use to get related products based on it
- *       - in: query
- *         name: category
- *         schema:
- *           type: integer
- *         description: Filter products by category ID
  *     responses:
  *       200:
  *         description: The list of products found
@@ -405,181 +410,5 @@ router.get(
    isAuth([CUSTOMER_ROLE]),
    productController.getProductDetail
 );
-
-/**
- * @swagger
- * /products/search:
- *   post:
- *     summary: Search for the products
- *     tags: [Products]
- *     description: Search for the products relatively
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: header
- *         name: auth_token
- *         schema:
- *           type: string
- *         required: true
- *         description: Token for authentication
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Page number for pagination (default is 1)
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 10
- *         description: Number of items per page (default is 10, max is 100)
- *       - in: query
- *         name: sortBy
- *         schema:
- *           type: string
- *           enum: [created_at, name, price, like_count]
- *         description: Field to sort by
- *       - in: query
- *         name: sortOrder
- *         schema:
- *           type: string
- *           enum: [asc, desc]
- *           default: desc
- *         description: Sort order (ascending or descending)
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               search_keywords:
- *                 type: string
- *                 example: Star
- *                 required: true
- *     responses:
- *       200:
- *         description: The list of products found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Product added
- *                 total_products:
- *                   type: integer
- *                   example: 10
- *                 products:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                         example: 1
- *                       name:
- *                         type: string
- *                         example: Lego Ninja Go
- *                       price:
- *                         type: double
- *                         example: 145.8
- *                       quantity:
- *                         type: integer
- *                         example: 134
- *                       description:
- *                         type: string
- *                         example: This is the description
- *                       like_count:
- *                         type: integer
- *                         example: 1
- *                       dislike_count:
- *                         type: integer
- *                         example: 1
- *                       categories:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             id:
- *                               type: integer
- *                               example: 1
- *                             name:
- *                               type: string
- *                               example: Ninja-Go ss1
- *                       image_path:
- *                         type: string
- *                         example: http:/localhost:3000/products/71guL0VnKiL._AC_SL1024_.jpg
- *                 categories:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                         example: 1
- *                       name:
- *                         type: string
- *                         example: Lego Ninja Go
- *                       total_product:
- *                         type: integer
- *                         example: 145
- *       400:
- *         description: Client error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: Error message!
- *       404:
- *         description: No products found in DB
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: No products found!
- *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: Server error!
- *                 error:
- *                   type: string
- *                   example: The error message
- */
-router.post(
-   "/search",
-   authenticateToken,
-   isAuth([CUSTOMER_ROLE]),
-   productController.searchProductByName
-)
 
 module.exports = router;
