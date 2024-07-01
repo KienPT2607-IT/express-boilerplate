@@ -16,9 +16,7 @@ const {
 	isIdValid,
 	processQueryParams,
 } = require("../utils/product_utils");
-const {
-	checkIdValid: checkCategoryIdValid,
-} = require("../services/CategoryServices");
+const { isIdValid: isCategoryIdValid } = require("../utils/category_utils");
 const { serverProductImagePaths } = require("../utils/file_utils");
 
 /**
@@ -152,7 +150,8 @@ async function getProductsForCustomer(
 	limit,
 	sortBy,
 	sortOrder,
-	category
+	category,
+	product,
 ) {
 	/*
 	 * Count the offset to find where to start returning data
@@ -167,19 +166,25 @@ async function getProductsForCustomer(
 		sortOrder
 	);
 	try {
-		if (!category) {
-			return await getProductsForCustomerNoFilter(
+		if (category) {
+			return await getProductsForCustomerWithFilter(
 				limit,
 				sortBy,
 				sortOrder,
+				category,
 				offset
 			);
 		}
-		return await getProductsForCustomerWithFilter(
+		if (product) {
+			return await getRelatedProductsForCustomer(
+				limit,
+				product
+			);
+		}
+		return await getProductsForCustomerNoFilter(
 			limit,
 			sortBy,
 			sortOrder,
-			category,
 			offset
 		);
 	} catch (error) {
@@ -189,6 +194,87 @@ async function getProductsForCustomer(
 			error: error.message,
 		};
 	}
+}
+
+/**
+ * The function get the products related to the provided product's id
+ * @param {number} limit - The number of products will be returned
+ * @param {string} product - The product id which will use to get related products based on it
+ * @returns The list of products along with additional data
+ */
+async function getRelatedProductsForCustomer(limit = 25, product) {
+	try {
+		const queryProductResults = await getProductsRelated(limit, product,);
+		if (!queryProductResults.success)
+			return queryProductResults;
+		if (queryProductResults.products.length === 0)
+			return {
+				success: false,
+				message: "No related products found!"
+			};
+		return {
+			success: true,
+			message: `Found: ${queryProductResults.products.length} products`,
+			products: queryProductResults.products,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: "Get related products failed!",
+			error: error.message
+		};
+	}
+}
+
+/**
+ * The function get the products related to the provided product's id
+ * @param {number} limit - The number of products will be returned
+ * @param {string} product - The product id which will use to get related products based on it
+ * @returns The list of products along with additional data
+ */
+async function getProductsRelated(limit, product,) {
+	try {
+		let [queryResults] = await connection.query(
+			`SELECT 
+					DISTINCT p.id,
+					p.name,
+					p.price,
+					p.like_count,
+					p.image_path
+				FROM 
+					products AS p
+				JOIN 
+					product_categories AS pc1 ON pc1.product_id = p.id
+				JOIN (
+					SELECT category_id 
+					FROM product_categories
+					WHERE product_id = ? 
+				) pc2 ON pc1.category_id = pc2.category_id
+				WHERE 
+					p.id != ?
+				ORDER BY 
+					p.like_count DESC,
+					p.name ASC
+				LIMIT ?
+				`,
+			[product, product, limit]
+		);
+		queryResults = serverProductImagePaths(queryResults);
+
+		return {
+			success: true,
+			products: queryResults,
+		};
+	} catch (error) {
+		console.log(error);
+		return {
+			success: false,
+			message: "Get related products failed!",
+			error: error.message,
+		};
+	}
+
+
 }
 
 /**
@@ -354,7 +440,7 @@ async function getProductsForCustomerWithFilter(
 			limit,
 			offset
 		);
-		if (!queryResults.success) return queryResults
+		if (!queryResults.success) return queryResults;
 
 		const totalProducts = await getTotalProductsWithFilter(category);
 		return {
@@ -452,7 +538,8 @@ function validateGetProductQueryParams(
 	limit,
 	sortBy,
 	sortOrder,
-	category
+	category,
+	product,
 ) {
 	if (!isPageNumberValid(page))
 		return {
@@ -475,12 +562,17 @@ function validateGetProductQueryParams(
 			message: "Invalid sort order!",
 		};
 	if (typeof category !== "undefined" && category.trim().length != 0)
-		if (!checkCategoryIdValid(category))
+		if (!isCategoryIdValid(category))
 			return {
 				success: false,
 				message: "Invalid category!",
 			};
-
+	if (typeof product !== "undefined" && product.trim().length != 0)
+		if (!isIdValid(product))
+			return {
+				success: false,
+				message: "Invalid product!"
+			};
 	return { success: true };
 }
 
