@@ -144,7 +144,7 @@ async function addNewProduct(
  * @param {string} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order
- * @param {string} categoryId - The id of category which is filtered
+ * @param {string} category - The id of category which is filtered
  * @returns The list of products and along with additional information
  */
 async function getProductsForCustomer(
@@ -152,7 +152,7 @@ async function getProductsForCustomer(
 	limit,
 	sortBy,
 	sortOrder,
-	categoryId
+	category
 ) {
 	/*
 	 * Count the offset to find where to start returning data
@@ -167,7 +167,7 @@ async function getProductsForCustomer(
 		sortOrder
 	);
 	try {
-		if (!categoryId) {
+		if (!category) {
 			return await getProductsForCustomerNoFilter(
 				limit,
 				sortBy,
@@ -179,7 +179,7 @@ async function getProductsForCustomer(
 			limit,
 			sortBy,
 			sortOrder,
-			categoryId,
+			category,
 			offset
 		);
 	} catch (error) {
@@ -332,7 +332,7 @@ async function getProductWithNoFilter(limit, sortBy, sortOrder, offset) {
  * @param {number} limit - The maximum number of products shown in each page
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order
- * @param {number | string} categoryId - The id of category which is filtered
+ * @param {number | string} category - The id of category which is filtered
  * @param {number} offset - WHere the products start being retrieved
  * @returns The list of products and along with additional information
  */
@@ -340,23 +340,23 @@ async function getProductsForCustomerWithFilter(
 	limit,
 	sortBy,
 	sortOrder,
-	categoryId,
+	category,
 	offset
 ) {
 	try {
 		// * Check if category is available for filtering products
-		const isCategoryAvailable = await checkCategoryExists(categoryId);
+		const isCategoryAvailable = await checkCategoryExists(category);
 		if (!isCategoryAvailable.success) return isCategoryAvailable;
 		const queryResults = await getProductsWithFilter(
 			sortBy,
 			sortOrder,
-			categoryId,
+			category,
 			limit,
 			offset
 		);
 		if (!queryResults.success) return queryResults
 
-		const totalProducts = await getTotalProductsWithFilter(categoryId);
+		const totalProducts = await getTotalProductsWithFilter(category);
 		return {
 			success: true,
 			message: `Found: ${queryResults.products.length} products`,
@@ -392,7 +392,7 @@ async function getTotalProductsWithFilter(categoryId) {
  * This function retrieves products from DB
  * @param {string} sortBy - The column name to be sorted
  * @param {string} sortOrder - The sort order
- * @param {number | string} categoryId - The id of category which is filtered
+ * @param {number | string} category - The id of category which is filtered
  * @param {number} limit - The maximum number of products shown in each page
  * @param {number} offset - WHere the products start being retrieved
  * @returns The list of products and along with additional information
@@ -400,7 +400,7 @@ async function getTotalProductsWithFilter(categoryId) {
 async function getProductsWithFilter(
 	sortBy,
 	sortOrder,
-	categoryId,
+	category,
 	limit,
 	offset
 ) {
@@ -422,7 +422,7 @@ async function getProductsWithFilter(
 			ORDER BY p.${sortBy} ${sortOrder}
 			LIMIT ?
 			OFFSET ?`,
-		[categoryId, limit, offset]
+		[category, limit, offset]
 	);
 	if (queryResults.length === 0)
 		return {
@@ -441,17 +441,18 @@ async function getProductsWithFilter(
 /**
  *
  * @param {string} page - This is the current page number to get data
- * @param {string} limit
- * @param {string | undefined} sortBy
- * @param {string | undefined} sortOrder
- * @param {string | undefined} categoryId
+ * @param {string} limit - The number of products will be returned
+ * @param {string | undefined} sortBy - The sort criteria
+ * @param {string | undefined} sortOrder - The sort order ASC or DESC
+ * @param {string | undefined} category - The category which will use to filter products
+ * @returns If the product query params are valid if not returns along with the message
  */
 function validateGetProductQueryParams(
 	page,
 	limit,
 	sortBy,
 	sortOrder,
-	categoryId
+	category
 ) {
 	if (!isPageNumberValid(page))
 		return {
@@ -473,11 +474,11 @@ function validateGetProductQueryParams(
 			success: false,
 			message: "Invalid sort order!",
 		};
-	if (typeof categoryId !== "undefined" && categoryId.trim().length != 0)
-		if (!checkCategoryIdValid(categoryId))
+	if (typeof category !== "undefined" && category.trim().length != 0)
+		if (!checkCategoryIdValid(category))
 			return {
 				success: false,
-				message: "Invalid category id",
+				message: "Invalid category!",
 			};
 
 	return { success: true };

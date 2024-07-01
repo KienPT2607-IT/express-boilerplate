@@ -154,7 +154,7 @@ router.post(
  *           default: desc
  *         description: Sort order (ascending or descending)
  *       - in: query
- *         name: categoryId
+ *         name: category
  *         schema:
  *           type: integer
  *         description: Filter products by category ID
