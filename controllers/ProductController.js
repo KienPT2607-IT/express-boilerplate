@@ -6,7 +6,6 @@ const {
 	validateGetProductQueryParams,
 	checkIdValid,
 	getProductDetail,
-	searchProducts,
 } = require("../services/ProductServices");
 const { removeUploadFile } = require("../utils/file_utils");
 
@@ -67,22 +66,23 @@ exports.addProduct = async (req, res) => {
 };
 
 exports.getListProductsForCustomer = async (req, res) => {
-	const { page, limit, sortBy, sortOrder, category, product } = req.query;
+	const { page, limit, sortBy, sortOrder, category, relatedToProduct, textQuery } = req.query;
 	try {
 		// * Check if all the query parameters are valid before start querying
 		const validationResult = validateGetProductQueryParams(
-			page, limit, sortBy, sortOrder, category, product
+			page, limit, sortBy, sortOrder, category, relatedToProduct
 		);
 		if (!validationResult.success)
 			return res.status(400).json(validationResult);
 
 		const productQueryResult = await getProductsForCustomer(
+			textQuery,
 			page,
 			limit,
 			sortBy || "create_at",
 			sortOrder || "DESC",
 			category,
-			product
+			relatedToProduct
 		);
 		if (!productQueryResult.success) {
 			const statusCode = (productQueryResult.error) ? 500 : 404;
@@ -117,47 +117,4 @@ exports.getProductDetail = async (req, res) => {
 			error: error.message,
 		});
 	}
-};
-
-exports.searchProductByName = async (req, res) => {
-	const { search_keywords } = req.body;
-	const { page, limit, sortBy, sortOrder } = req.query;
-	try {
-		if (typeof search_keywords === "undefined") return res.status(400).json({
-			success: false,
-			message: "Invalid search keywords!"
-		});
-		// * Check if all the query parameters are valid before start querying
-		let validationResult = validateGetProductQueryParams(
-			page, limit, sortBy, sortOrder
-		);
-		if (!validationResult.success)
-			return res.status(400).json(validationResult);
-
-		let searchResults;
-		if (search_keywords.trim().length === 0) {
-			searchResults = await getProductsForCustomer(
-				page, limit,
-				sortBy || "create_at",
-				sortOrder || "DESC"
-			);
-		} else {
-			searchResults = await searchProducts(
-				search_keywords, page, limit,
-				sortBy || "create_at",
-				sortOrder || "DESC"
-			);
-		}
-		if (!searchResults.success) {
-			const statusCode = (searchResults.error) ? 500 : 404;
-			return res.status(statusCode).json(searchResults);
-		}
-		return res.status(200).json(searchResults);
-	} catch (error) {
-		return res.status(500).json({
-			success: false,
-			message: "Server error!",
-			error: error.message,
-		});
-	}
-};
+}
