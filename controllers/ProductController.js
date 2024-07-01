@@ -67,11 +67,11 @@ exports.addProduct = async (req, res) => {
 };
 
 exports.getListProductsForCustomer = async (req, res) => {
-	const { page, limit, sortBy, sortOrder, category } = req.query;
+	const { page, limit, sortBy, sortOrder, category, product } = req.query;
 	try {
 		// * Check if all the query parameters are valid before start querying
 		const validationResult = validateGetProductQueryParams(
-			page, limit, sortBy, sortOrder, category
+			page, limit, sortBy, sortOrder, category, product
 		);
 		if (!validationResult.success)
 			return res.status(400).json(validationResult);
@@ -81,7 +81,8 @@ exports.getListProductsForCustomer = async (req, res) => {
 			limit,
 			sortBy || "create_at",
 			sortOrder || "DESC",
-			category
+			category,
+			product
 		);
 		if (!productQueryResult.success) {
 			const statusCode = (productQueryResult.error) ? 500 : 404;

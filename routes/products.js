@@ -131,6 +131,7 @@ router.post(
  *           type: integer
  *           minimum: 1
  *           default: 1
+ *         required: true
  *         description: Page number for pagination (default is 1)
  *       - in: query
  *         name: limit
@@ -139,6 +140,7 @@ router.post(
  *           minimum: 1
  *           maximum: 100
  *           default: 10
+ *         required: true
  *         description: Number of items per page (default is 10, max is 100)
  *       - in: query
  *         name: sortBy
@@ -153,6 +155,11 @@ router.post(
  *           enum: [asc, desc]
  *           default: desc
  *         description: Sort order (ascending or descending)
+ *       - in: query
+ *         name: product
+ *         schema:
+ *           type: integer
+ *         description: The product id which will use to get related products based on it
  *       - in: query
  *         name: category
  *         schema:
